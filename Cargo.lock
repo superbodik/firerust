@@ -709,19 +709,35 @@ dependencies = [
 name = "fr-shell"
 version = "0.0.1"
 dependencies = [
+ "fr-dom",
+ "fr-geom",
+ "fr-layout",
+ "fr-mem",
+ "fr-net",
+ "fr-page",
+ "fr-paint",
+ "fr-raster",
+ "fr-tab",
+ "fr-text",
+ "fr-ui",
+ "fr-window",
+ "url",
+]
+
+[[package]]
+name = "fr-tab"
+version = "0.0.1"
+dependencies = [
  "fr-css",
  "fr-dom",
  "fr-geom",
  "fr-history",
  "fr-image",
  "fr-layout",
- "fr-net",
+ "fr-mem",
  "fr-page",
  "fr-paint",
- "fr-raster",
  "fr-text",
- "fr-ui",
- "fr-window",
  "url",
 ]
 

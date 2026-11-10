@@ -1,19 +1,26 @@
-use winit::keyboard::{Key, ModifiersState, NamedKey};
+use winit::keyboard::{Key, KeyCode, ModifiersState, NamedKey, PhysicalKey};
 
 use crate::input::key_input::KeyInput;
 
-pub fn translate_key(key: &Key, modifiers: ModifiersState) -> Option<KeyInput> {
+pub fn translate_key(
+    key: &Key,
+    physical: PhysicalKey,
+    modifiers: ModifiersState,
+) -> Option<KeyInput> {
+    if modifiers.control_key()
+        && let Some(shortcut) = control_shortcut(physical)
+    {
+        return Some(shortcut);
+    }
     match key {
         Key::Named(NamedKey::ArrowLeft) if modifiers.alt_key() => Some(KeyInput::GoBack),
         Key::Named(NamedKey::ArrowRight) if modifiers.alt_key() => Some(KeyInput::GoForward),
         Key::Named(NamedKey::F5) => Some(KeyInput::Reload),
         Key::Named(NamedKey::F6) => Some(KeyInput::FocusAddress),
-        Key::Character(text) if modifiers.control_key() && text.eq_ignore_ascii_case("r") => {
-            Some(KeyInput::Reload)
+        Key::Named(NamedKey::Tab) if modifiers.control_key() && modifiers.shift_key() => {
+            Some(KeyInput::PreviousTab)
         }
-        Key::Character(text) if modifiers.control_key() && text.eq_ignore_ascii_case("l") => {
-            Some(KeyInput::FocusAddress)
-        }
+        Key::Named(NamedKey::Tab) if modifiers.control_key() => Some(KeyInput::NextTab),
         Key::Named(NamedKey::ArrowLeft) => Some(KeyInput::ArrowLeft),
         Key::Named(NamedKey::ArrowRight) => Some(KeyInput::ArrowRight),
         Key::Named(NamedKey::ArrowUp) => Some(KeyInput::ArrowUp),
@@ -27,6 +34,20 @@ pub fn translate_key(key: &Key, modifiers: ModifiersState) -> Option<KeyInput> {
         Key::Named(NamedKey::Backspace) => Some(KeyInput::Backspace),
         Key::Named(NamedKey::Delete) => Some(KeyInput::Delete),
         Key::Named(NamedKey::Escape) => Some(KeyInput::Escape),
+        _ => None,
+    }
+}
+
+fn control_shortcut(physical: PhysicalKey) -> Option<KeyInput> {
+    let PhysicalKey::Code(code) = physical else {
+        return None;
+    };
+    match code {
+        KeyCode::KeyT => Some(KeyInput::NewTab),
+        KeyCode::KeyW => Some(KeyInput::CloseTab),
+        KeyCode::KeyL => Some(KeyInput::FocusAddress),
+        KeyCode::KeyR => Some(KeyInput::Reload),
+        KeyCode::KeyM => Some(KeyInput::ToggleMemoryPanel),
         _ => None,
     }
 }

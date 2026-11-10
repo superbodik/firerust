@@ -5,16 +5,15 @@ version.workspace = true
 publish.workspace = true
 
 [dependencies]
-fr-css.workspace = true
 fr-dom.workspace = true
 fr-geom.workspace = true
-fr-history.workspace = true
-fr-image.workspace = true
 fr-layout.workspace = true
+fr-mem.workspace = true
 fr-net.workspace = true
 fr-page.workspace = true
 fr-paint.workspace = true
 fr-raster.workspace = true
+fr-tab.workspace = true
 fr-text.workspace = true
 fr-ui.workspace = true
 fr-window.workspace = true

@@ -1,3 +1,4 @@
+pub mod blank_page;
 pub mod build_page;
 pub mod error_page;
 pub mod escape_html;

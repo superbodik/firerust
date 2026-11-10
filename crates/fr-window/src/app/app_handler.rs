@@ -129,7 +129,7 @@ impl<S: RenderScene> ApplicationHandler for AppHandler<S> {
                 if event.state != ElementState::Pressed {
                     return;
                 }
-                match translate_key(&event.logical_key, self.modifiers) {
+                match translate_key(&event.logical_key, event.physical_key, self.modifiers) {
                     Some(key) => self.dispatch(InputEvent::Key(key)),
                     None => {
                         let text = event.text.as_deref();

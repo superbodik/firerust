@@ -7,7 +7,8 @@ use fr_text::engine::text_engine::TextEngine;
 use fr_text::render::shape_runs::shape_runs;
 use fr_text::render::text_alignment::TextAlignment;
 use fr_ui::address::address_field::AddressField;
-use fr_ui::toolbar::toolbar_metrics::{TOOLBAR_HEIGHT, address_rect, button_rect};
+use fr_ui::tabs::tab_strip_metrics::TAB_STRIP_HEIGHT;
+use fr_ui::toolbar::toolbar_metrics::{CHROME_HEIGHT, TOOLBAR_HEIGHT, address_rect, button_rect};
 use fr_ui::toolbar::toolbar_target::ToolbarTarget;
 
 use crate::toolbar::text_width::text_width;
@@ -23,12 +24,12 @@ pub fn draw_toolbar(canvas: &mut Canvas, engine: &mut TextEngine, state: &Toolba
     let width = canvas.width() as f32;
     fill_rect(
         canvas,
-        Rect::from_xywh(0.0, 0.0, width, TOOLBAR_HEIGHT),
+        Rect::from_xywh(0.0, TAB_STRIP_HEIGHT, width, TOOLBAR_HEIGHT),
         Rgba::opaque(236, 236, 241),
     );
     fill_rect(
         canvas,
-        Rect::from_xywh(0.0, TOOLBAR_HEIGHT - 1.0, width, 1.0),
+        Rect::from_xywh(0.0, CHROME_HEIGHT - 1.0, width, 1.0),
         Rgba::opaque(200, 200, 208),
     );
     draw_button(canvas, engine, ToolbarTarget::Back, "←", state.can_go_back);

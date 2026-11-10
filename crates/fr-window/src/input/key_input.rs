@@ -17,4 +17,9 @@ pub enum KeyInput {
     Escape,
     ArrowLeft,
     ArrowRight,
+    NewTab,
+    CloseTab,
+    NextTab,
+    PreviousTab,
+    ToggleMemoryPanel,
 }

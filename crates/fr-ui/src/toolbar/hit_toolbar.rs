@@ -1,10 +1,11 @@
 use fr_geom::geometry::point::Point;
 
-use crate::toolbar::toolbar_metrics::{TOOLBAR_HEIGHT, address_rect, button_rect};
+use crate::tabs::tab_strip_metrics::TAB_STRIP_HEIGHT;
+use crate::toolbar::toolbar_metrics::{CHROME_HEIGHT, address_rect, button_rect};
 use crate::toolbar::toolbar_target::ToolbarTarget;
 
 pub fn hit_toolbar(point: Point, toolbar_width: f32) -> Option<ToolbarTarget> {
-    if point.y < 0.0 || point.y >= TOOLBAR_HEIGHT {
+    if point.y < TAB_STRIP_HEIGHT || point.y >= CHROME_HEIGHT {
         return None;
     }
     let buttons = [
