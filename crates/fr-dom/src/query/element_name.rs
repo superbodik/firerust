@@ -1,5 +1,5 @@
-use fr_dom::node::node_id::NodeId;
-use fr_dom::tree::document::Document;
+use crate::node::node_id::NodeId;
+use crate::tree::document::Document;
 
 pub fn element_name(document: &Document, id: NodeId) -> Option<&str> {
     document

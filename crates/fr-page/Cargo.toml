@@ -5,7 +5,9 @@ version.workspace = true
 publish.workspace = true
 
 [dependencies]
+fr-css.workspace = true
 fr-dom.workspace = true
+fr-geom.workspace = true
 fr-html.workspace = true
 fr-net.workspace = true
 url.workspace = true

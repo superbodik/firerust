@@ -11,7 +11,7 @@ impl NodeId {
         NonZeroU32::new(number).map(Self)
     }
 
-    pub(crate) fn index(self) -> usize {
+    pub fn index(self) -> usize {
         self.0.get() as usize - 1
     }
 }

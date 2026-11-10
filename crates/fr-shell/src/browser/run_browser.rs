@@ -14,6 +14,6 @@ pub fn run_browser() -> Result<(), Box<dyn Error>> {
     let base_dir = std::env::current_dir()?;
     let page = load_page(&address, &base_dir)?;
     let config = WindowConfig::new(window_title(&page), 960, 600);
-    run(config, PageScene::new(page.lines))?;
+    run(config, PageScene::new(page.lines, page.background))?;
     Ok(())
 }

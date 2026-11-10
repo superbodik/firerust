@@ -1,0 +1,6 @@
+body { background-color: #f4f1ea; color: #222; font-size: 16px; }
+header.site { background-color: #b7410e; color: white; padding: 8px 16px; }
+header.site h1 { margin: 0; }
+article h2 { color: #b7410e; }
+a { color: #0b5394; }
+.hidden { display: none; }

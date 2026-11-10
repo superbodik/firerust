@@ -1,0 +1,13 @@
+[package]
+name = "fr-css"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+cssparser.workspace = true
+fr-dom.workspace = true
+fr-geom.workspace = true
+
+[dev-dependencies]
+fr-html.workspace = true
