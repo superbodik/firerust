@@ -168,3 +168,25 @@ fn a_bare_hex_attribute_value_is_accepted() {
 
     assert_eq!(page.style("a").background_color, Rgba::opaque(255, 102, 0));
 }
+
+#[test]
+fn a_table_resets_the_text_alignment_of_a_center_element() {
+    let page = Styled::new(
+        "<center><table id=t><tr><td id=c>x</td></tr></table><p id=p>y</p></center>",
+        "",
+    );
+
+    assert_eq!(page.style("c").text_align, TextAlign::Left);
+    assert_eq!(page.style("p").text_align, TextAlign::Center);
+}
+
+#[test]
+fn a_table_inside_a_center_element_gets_auto_margins() {
+    let page = Styled::new(
+        "<center><table id=t><tr><td>x</td></tr></table></center>",
+        "",
+    );
+
+    assert_eq!(page.style("t").margin.left, Length::Auto);
+    assert_eq!(page.style("t").margin.right, Length::Auto);
+}

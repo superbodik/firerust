@@ -12,6 +12,7 @@ use crate::context::layout_context::LayoutContext;
 use crate::flex::layout_flex_box::layout_flex_box;
 use crate::image::is_replaced::is_replaced;
 use crate::image::layout_replaced::layout_replaced;
+use crate::table::layout_table_box::layout_table_box;
 
 pub fn layout_block_box(
     context: &mut LayoutContext<'_>,
@@ -27,6 +28,9 @@ pub fn layout_block_box(
     }
     if style.display == Display::Flex {
         return layout_flex_box(context, node, style, spec);
+    }
+    if style.display == Display::Table {
+        return layout_table_box(context, node, style, spec);
     }
     layout_normal_block(context, node, style, spec)
 }

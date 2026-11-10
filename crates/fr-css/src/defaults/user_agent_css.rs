@@ -3,7 +3,8 @@ html, body, div, p, h1, h2, h3, h4, h5, h6, ul, ol, dl, dt, dd, blockquote, pre,
 fieldset, address, figure, figcaption, details, summary, section, article, header, footer,
 nav, main, aside, hr, center, caption { display: block }
 li { display: list-item }
-table { display: table }
+table { display: table; text-align: left }
+center > table { margin-left: auto; margin-right: auto }
 thead, tbody, tfoot { display: table-row-group }
 tr { display: table-row }
 td, th { display: table-cell; padding: 1px }

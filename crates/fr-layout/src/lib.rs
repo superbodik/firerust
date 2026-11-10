@@ -9,3 +9,4 @@ pub mod inline;
 pub mod intrinsic;
 pub mod metrics;
 pub mod page;
+pub mod table;
