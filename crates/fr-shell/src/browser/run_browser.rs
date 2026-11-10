@@ -10,18 +10,27 @@ use crate::browser::window_title::window_title;
 use crate::scenes::page_scene::PageScene;
 
 pub fn run_browser() -> Result<(), Box<dyn Error>> {
-    let page = first_page()?;
-    let config = WindowConfig::new(window_title(&page), 960, 600);
-    run(config, PageScene::new(page))?;
+    let mut pages = load_pages()?.into_iter();
+    let first = pages.next().ok_or("no start page")?;
+    let config = WindowConfig::new(window_title(&first), 960, 600);
+    let mut scene = PageScene::new(first);
+    for page in pages {
+        scene.add_background_tab(page);
+    }
+    run(config, scene)?;
     Ok(())
 }
 
-fn first_page() -> Result<Page, Box<dyn Error>> {
-    match std::env::args().nth(1) {
-        Some(address) => {
-            let base_dir = std::env::current_dir()?;
-            Ok(load_page(&address, &base_dir)?)
-        }
-        None => blank_page().ok_or_else(|| "cannot build the start page".into()),
+fn load_pages() -> Result<Vec<Page>, Box<dyn Error>> {
+    let addresses: Vec<String> = std::env::args().skip(1).collect();
+    if addresses.is_empty() {
+        let page = blank_page().ok_or("cannot build the start page")?;
+        return Ok(vec![page]);
     }
+    let base_dir = std::env::current_dir()?;
+    let mut pages = Vec::new();
+    for address in &addresses {
+        pages.push(load_page(address, &base_dir)?);
+    }
+    Ok(pages)
 }

@@ -78,6 +78,12 @@ impl PageScene {
         }
     }
 
+    pub fn add_background_tab(&mut self, page: Page) {
+        self.tabs.open(page);
+        self.tabs.activate(0);
+        self.tabs.enforce_limit(MAX_LIVE_TABS);
+    }
+
     fn remember_scroll(&mut self) {
         let offset = self.scroll.offset();
         self.tabs.active_mut().set_scroll(offset);
