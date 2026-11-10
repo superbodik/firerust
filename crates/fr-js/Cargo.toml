@@ -1,0 +1,11 @@
+[package]
+name = "fr-js"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+boa_engine.workspace = true
+fr-css.workspace = true
+fr-dom.workspace = true
+fr-html.workspace = true

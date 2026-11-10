@@ -11,6 +11,7 @@ publish = false
 cosmic-text = "0.19.0"
 cssparser = "0.38.0"
 html5ever = "0.40.1"
+boa_engine = { version = "0.22.0", default-features = false }
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
 markup5ever_rcdom = "0.40.1"
 softbuffer = "0.4.8"
@@ -24,6 +25,7 @@ fr-cache = { version = "0.0.1", path = "crates/fr-cache" }
 fr-css = { version = "0.0.1", path = "crates/fr-css" }
 fr-dom = { version = "0.0.1", path = "crates/fr-dom" }
 fr-geom = { version = "0.0.1", path = "crates/fr-geom" }
+fr-js = { version = "0.0.1", path = "crates/fr-js" }
 fr-html = { version = "0.0.1", path = "crates/fr-html" }
 fr-history = { version = "0.0.1", path = "crates/fr-history" }
 fr-image = { version = "0.0.1", path = "crates/fr-image" }

@@ -22,6 +22,23 @@ impl ElementData {
         &self.attributes
     }
 
+    pub fn set_attribute(&mut self, name: &str, value: &str) {
+        match self
+            .attributes
+            .iter_mut()
+            .find(|attribute| attribute.name() == name)
+        {
+            Some(existing) => *existing = Attribute::new(name, value),
+            None => self.attributes.push(Attribute::new(name, value)),
+        }
+    }
+
+    pub fn remove_attribute(&mut self, name: &str) -> bool {
+        let before = self.attributes.len();
+        self.attributes.retain(|attribute| attribute.name() != name);
+        self.attributes.len() != before
+    }
+
     pub fn attribute(&self, name: &str) -> Option<&str> {
         self.attributes
             .iter()

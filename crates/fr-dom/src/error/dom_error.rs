@@ -7,6 +7,8 @@ pub enum DomError {
     AlreadyAttached,
     WouldCreateCycle,
     TooManyNodes,
+    NotAnElement,
+    NotAChild,
 }
 
 impl fmt::Display for DomError {
@@ -16,6 +18,8 @@ impl fmt::Display for DomError {
             Self::AlreadyAttached => "node already has a parent",
             Self::WouldCreateCycle => "node cannot become its own ancestor",
             Self::TooManyNodes => "document holds too many nodes",
+            Self::NotAnElement => "node is not an element",
+            Self::NotAChild => "node is not a child of this parent",
         };
         formatter.write_str(text)
     }
