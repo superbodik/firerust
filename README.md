@@ -41,6 +41,8 @@ The goal is simple: open simple and medium-complexity sites while using noticeab
 - A readable error page when a page cannot be opened
 - Tabs: new tab, close, switch; background tabs beyond the two most recently used drop their page from memory and are fetched again when selected
 - A shared byte-limited image cache and a memory panel (`Ctrl+M`)
+- Networking: page character sets (windows-1251, KOI8-R and the rest of the web set), gzip and brotli, redirects, cookies, POST requests
+- Forms: text fields, passwords, checkboxes, radio buttons, selects, text areas and buttons you can click and type into, Tab between them, GET and POST submission, `input`, `change` and `submit` events for scripts
 - JavaScript on [Boa](https://github.com/boa-dev/boa): inline and external scripts, `DOMContentLoaded` and `load`, `document` and element APIs (queries, creating and moving nodes, `textContent`, `innerHTML`, attributes, `classList`, `style`), events with capture and bubbling phases, `onclick` attributes and properties, `setTimeout`, `setInterval`, `requestAnimationFrame`, `console`, `localStorage`
 - Deeply nested documents are safe: layout runs on a large stack and the tree is freed iteratively
 
@@ -69,6 +71,13 @@ JavaScript demos, a counter with a timer and a drop-down menu:
 ```
 cargo run -p fr-shell -- tests/pages/js_counter.html
 cargo run -p fr-shell -- tests/pages/js_menu.html
+```
+
+Forms and a log-in flow against the bundled test server (in a second terminal run `cargo run -p fr-test-server`, then open `http://127.0.0.1:8080/login`, user `ada`, password `lovelace`):
+
+```
+cargo run -p fr-test-server -- 127.0.0.1:8080
+cargo run -p fr-shell -- tests/pages/forms.html
 ```
 
 An address works too, and several addresses open as tabs:
@@ -101,6 +110,7 @@ fr-shell ─ binary: entry point and scenes
  ├─ fr-window   window (winit), input events, frame output (softbuffer)
  ├─ fr-ui       scroll state, address field, toolbar geometry (no window needed)
  ├─ fr-js       JavaScript runtime on Boa: DOM, events, timers
+ ├─ fr-form     form fields, GET and POST requests, focus order
  ├─ fr-tab      tabs, unloading of background tabs, memory estimates
  ├─ fr-history  back / forward stack with scroll positions
  ├─ fr-cache    byte-limited LRU cache
@@ -133,7 +143,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-About 520 tests pass. One network test is run manually:
+About 620 tests pass. One network test is run manually:
 
 ```
 cargo test -p fr-page --test real_sites -- --ignored
@@ -153,12 +163,13 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 | 5 | Navigation and UI: address bar, back / forward, link clicks, scrolling | done |
 | 6 | Tabs and memory | done |
 | 7 | JavaScript | done |
-| 8 | Network and forms | next |
-| 9 | Security and polish | planned |
+| 8 | Network and forms | done |
+| 9 | Security and polish | next |
 
 ## Known limitations
 
 - Loading blocks the window while a page is fetched
+- Form controls take a line of their own, a select changes on click without a drop-down, no file upload, no `reset` button, no form validation; cookies live only in memory; going back after a POST asks the address again with GET
 - Switching to an unloaded tab reloads it and blocks the window; several start addresses load one after another
 - No page zoom yet; links to `#fragment` do not scroll to the anchor
 - Back and forward reload the page, there is no page cache yet
