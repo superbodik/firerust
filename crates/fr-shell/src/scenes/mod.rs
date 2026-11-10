@@ -21,3 +21,4 @@ pub mod request_for;
 pub mod run_due_timers;
 pub mod timer_delay;
 pub mod write_control_text;
+pub mod zoom_key;

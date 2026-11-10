@@ -49,7 +49,7 @@ The goal is simple: open simple and medium-complexity sites while using noticeab
 
 Pages that load and lay out: Hacker News, example.com, CERN, NPR, Lobsters.
 
-Keys: `Ctrl+L` or `F6` focus the address bar, `Enter` opens, `Esc` cancels, `Alt+Left` and `Alt+Right` go back and forward, `F5` or `Ctrl+R` reloads, `Ctrl+T` opens a tab, `Ctrl+W` closes it, `Ctrl+Tab` and `Ctrl+Shift+Tab` switch tabs, `Ctrl+M` toggles the memory panel. Shortcuts use physical keys, so they work on any keyboard layout.
+Keys: `Ctrl+L` or `F6` focus the address bar, `Enter` opens, `Esc` cancels, `Alt+Left` and `Alt+Right` go back and forward, `F5` or `Ctrl+R` reloads, `Ctrl+T` opens a tab, `Ctrl+W` closes it, `Ctrl+Tab` and `Ctrl+Shift+Tab` switch tabs, `Ctrl+M` toggles the memory panel, `Ctrl+Plus`, `Ctrl+Minus`, `Ctrl+0` and `Ctrl+Wheel` zoom the page (25% to 500%, remembered per site). Shortcuts use physical keys, so they work on any keyboard layout.
 
 ## Quick start
 
@@ -145,7 +145,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-About 640 tests pass. One network test is run manually:
+About 650 tests pass. One network test is run manually:
 
 ```
 cargo test -p fr-page --test real_sites -- --ignored
@@ -173,7 +173,7 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 - Content security policy is read only from the meta tag, not from response headers; no nonces or hashes
 - Form controls take a line of their own, a select changes on click without a drop-down, no file upload, no `reset` button, no form validation; cookies live only in memory; going back after a POST asks the address again with GET
 - Scripts and the final page build still run on the window thread, so a heavy page can stall the window while it is built; several start addresses after the first load one after another
-- No page zoom yet; links to `#fragment` do not scroll to the anchor
+- Page zoom is a straight scale of the drawing: thin borders can look soft at fractional zoom levels; links to `#fragment` do not scroll to the anchor
 - Back and forward reload the page, there is no page cache yet
 - The last tab cannot be closed
 - Inline images become their own blocks; margins, padding and borders on inline elements are ignored; no underline

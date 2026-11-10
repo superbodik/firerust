@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use fr_dom::node::node_id::NodeId;
@@ -33,6 +34,7 @@ use fr_ui::tabs::tab_strip_target::TabStripTarget;
 use fr_ui::toolbar::hit_toolbar::hit_toolbar;
 use fr_ui::toolbar::toolbar_metrics::CHROME_HEIGHT;
 use fr_ui::toolbar::toolbar_target::ToolbarTarget;
+use fr_ui::zoom::zoom_level::ZoomLevel;
 use fr_window::input::input_event::InputEvent;
 use fr_window::input::key_input::KeyInput;
 use fr_window::scene::pointer_kind::PointerKind;
@@ -51,6 +53,7 @@ use crate::scenes::focus_key::FocusKey;
 use crate::scenes::form_focus::FormFocus;
 use crate::scenes::form_for::form_for;
 use crate::scenes::form_request::form_request;
+use crate::scenes::invalidate_layout::invalidate_layout;
 use crate::scenes::link_target::link_target;
 use crate::scenes::load_target::LoadTarget;
 use crate::scenes::neighbour_in::neighbour_in;
@@ -59,6 +62,7 @@ use crate::scenes::refresh_active::refresh_active;
 use crate::scenes::request_for::request_for;
 use crate::scenes::run_due_timers::run_due_timers;
 use crate::scenes::timer_delay::timer_delay;
+use crate::scenes::zoom_key::zoom_key;
 use crate::toolbar::draw_load_bar::draw_load_bar;
 use crate::toolbar::draw_memory_bar::draw_memory_bar;
 use crate::toolbar::draw_tab_strip::draw_tab_strip;
@@ -83,6 +87,7 @@ pub struct PageScene {
     shows_memory: bool,
     form: FormFocus,
     pending: Option<PendingLoad>,
+    zooms: HashMap<String, ZoomLevel>,
 }
 
 impl PageScene {
@@ -102,6 +107,7 @@ impl PageScene {
             shows_memory: false,
             form: FormFocus::new(),
             pending: None,
+            zooms: HashMap::new(),
         }
     }
 
@@ -279,14 +285,45 @@ impl PageScene {
         SceneReaction::Redraw
     }
 
+    fn zoom(&self) -> ZoomLevel {
+        let key = zoom_key(self.tabs.active().url());
+        self.zooms.get(&key).copied().unwrap_or_default()
+    }
+
+    fn factor(&self) -> f32 {
+        self.zoom().factor()
+    }
+
+    fn page_point(&self, x: f32, y: f32) -> Point {
+        let factor = self.factor();
+        Point::new(
+            x / factor,
+            (y - CHROME_HEIGHT + self.scroll.offset()) / factor,
+        )
+    }
+
+    fn change_zoom(&mut self, change: fn(ZoomLevel) -> ZoomLevel) -> SceneReaction {
+        let old = self.zoom();
+        let new = change(old);
+        if new == old {
+            return SceneReaction::Idle;
+        }
+        let anchor = self.scroll.offset() / old.factor();
+        let key = zoom_key(self.tabs.active().url());
+        self.zooms.insert(key, new);
+        invalidate_layout(&mut self.tabs);
+        self.pending_scroll = Some(anchor * new.factor());
+        SceneReaction::Redraw
+    }
+
     fn target_at(&mut self, x: f32, y: f32) -> Option<Url> {
         if y < CHROME_HEIGHT {
             return None;
         }
+        let point = self.page_point(x, y);
         let tab = self.tabs.active();
         let content = tab.content()?;
         let layout = content.layout.as_ref()?;
-        let point = Point::new(x, y - CHROME_HEIGHT + self.scroll.offset());
         link_target(
             layout,
             &content.document.borrow(),
@@ -322,10 +359,15 @@ impl PageScene {
         let was_focused = self.address.is_focused();
         self.address.blur();
         let link = self.target_at(x, y);
-        let page_point = Point::new(x, y - CHROME_HEIGHT + self.scroll.offset());
+        let page_point = self.page_point(x, y);
         let control = control_at(&mut self.tabs, &mut self.text_engine, page_point);
-        let allowed =
-            dispatch_page_click(&mut self.tabs, &mut self.text_engine, page_point, (x, y));
+        let factor = self.factor();
+        let allowed = dispatch_page_click(
+            &mut self.tabs,
+            &mut self.text_engine,
+            page_point,
+            (x / factor, (y - CHROME_HEIGHT) / factor),
+        );
         let changed = refresh_active(&mut self.tabs);
         let blurred = control != self.form.control() && self.form.blur(&mut self.tabs);
         if allowed {
@@ -395,6 +437,9 @@ impl PageScene {
             KeyInput::CloseTab => self.close_tab(active),
             KeyInput::NextTab => self.switch_to((active + 1) % count),
             KeyInput::PreviousTab => self.switch_to((active + count - 1) % count),
+            KeyInput::ZoomIn => self.change_zoom(ZoomLevel::zoom_in),
+            KeyInput::ZoomOut => self.change_zoom(ZoomLevel::zoom_out),
+            KeyInput::ZoomReset => self.change_zoom(|_| ZoomLevel::new()),
             KeyInput::ToggleMemoryPanel => {
                 self.shows_memory = !self.shows_memory;
                 SceneReaction::Redraw
@@ -452,7 +497,7 @@ impl PageScene {
         if y < CHROME_HEIGHT {
             return false;
         }
-        let page_point = Point::new(x, y - CHROME_HEIGHT + self.scroll.offset());
+        let page_point = self.page_point(x, y);
         let Some(control) = control_at(&mut self.tabs, &mut self.text_engine, page_point) else {
             return false;
         };
@@ -480,13 +525,14 @@ impl PageScene {
 
     fn layout_for(&mut self, width: u32) {
         let focus = self.form.layout_focus();
+        let layout_width = (width as f32 / self.factor()).floor().max(1.0) as u32;
         let Some(content) = self.tabs.active_mut().content_mut() else {
             return;
         };
         let is_current = content
             .layout
             .as_ref()
-            .is_some_and(|layout| layout.width == width);
+            .is_some_and(|layout| layout.width == layout_width);
         if is_current {
             return;
         }
@@ -495,11 +541,11 @@ impl PageScene {
             &content.styles,
             &content.images,
             &mut self.text_engine,
-            width as f32,
+            layout_width as f32,
             focus,
         );
         content.layout = Some(LayoutCache {
-            width,
+            width: layout_width,
             height: tree.height,
             background: tree.background,
             list: build_display_list(&tree.root),
@@ -509,7 +555,10 @@ impl PageScene {
 
     fn metrics(&self) -> Option<ScrollMetrics> {
         let layout = self.tabs.active().content()?.layout.as_ref()?;
-        Some(ScrollMetrics::new(layout.height, self.viewport_height))
+        Some(ScrollMetrics::new(
+            layout.height * self.factor(),
+            self.viewport_height,
+        ))
     }
 
     fn tab_strip_state(&self) -> TabStripState {
@@ -605,7 +654,15 @@ impl RenderScene for PageScene {
         if let Some(pending) = &self.pending {
             return Some(format!("Loading {} - firerust", pending.url));
         }
-        Some(format!("{} - firerust", self.tabs.active().title()))
+        let zoom = self.zoom();
+        if zoom.is_default() {
+            return Some(format!("{} - firerust", self.tabs.active().title()));
+        }
+        Some(format!(
+            "{} - {}% - firerust",
+            self.tabs.active().title(),
+            zoom.percent()
+        ))
     }
 
     fn pointer(&self) -> PointerKind {
@@ -619,6 +676,7 @@ impl RenderScene for PageScene {
 
 impl PageScene {
     fn paint_page(&mut self, canvas: &mut Canvas, metrics: ScrollMetrics) {
+        let factor = self.factor();
         let Some(layout) = self
             .tabs
             .active()
@@ -633,6 +691,7 @@ impl PageScene {
             &mut self.text_engine,
             &layout.list,
             self.scroll.offset() - CHROME_HEIGHT,
+            factor,
         );
         if let Some(thumb) = scrollbar_thumb(self.scroll.offset(), metrics, self.viewport_width) {
             let placed = Rect::from_xywh(

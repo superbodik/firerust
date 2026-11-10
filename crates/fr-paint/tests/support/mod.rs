@@ -67,6 +67,26 @@ pub fn paint_with_image(
     let list = build_display_list(&tree.root);
     let mut canvas = Canvas::new(WIDTH, HEIGHT).expect("canvas");
     fr_raster::draw::clear::clear(&mut canvas, tree.background);
-    paint_display_list(&mut canvas, &mut engine, &list, scroll_y);
+    paint_display_list(&mut canvas, &mut engine, &list, scroll_y, 1.0);
+    Painted { canvas, list }
+}
+
+pub fn paint_scaled(html: &str, css: &str, scroll_y: f32, scale: f32) -> Painted {
+    let document = parse_html(html);
+    let author = [fr_css::parse::parse_stylesheet::parse_stylesheet(css)];
+    let styles = compute_styles(&document, &user_agent_sheet(), &author);
+    let images = ImageStore::new();
+    let mut engine = TextEngine::new();
+    let tree = layout_page(
+        &document,
+        &styles,
+        &images,
+        &mut engine,
+        WIDTH as f32 / scale,
+    );
+    let list = build_display_list(&tree.root);
+    let mut canvas = Canvas::new(WIDTH, HEIGHT).expect("canvas");
+    fr_raster::draw::clear::clear(&mut canvas, tree.background);
+    paint_display_list(&mut canvas, &mut engine, &list, scroll_y, scale);
     Painted { canvas, list }
 }

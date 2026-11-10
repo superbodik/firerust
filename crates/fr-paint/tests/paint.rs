@@ -1,7 +1,7 @@
 mod support;
 
 use fr_paint::display::display_item::DisplayItem;
-use support::{paint, paint_with_image, solid_image};
+use support::{paint, paint_scaled, paint_with_image, solid_image};
 
 const WHITE: (u8, u8, u8) = (255, 255, 255);
 const RED: (u8, u8, u8) = (255, 0, 0);
@@ -162,4 +162,46 @@ fn items_far_below_the_viewport_are_skipped_without_error() {
     );
 
     assert_eq!(page.rgb(50, 60), WHITE);
+}
+
+#[test]
+fn zooming_in_doubles_the_painted_box() {
+    let page = paint_scaled(
+        "<div style='width: 40px; height: 20px; background-color: #ff0000'></div>",
+        "",
+        0.0,
+        2.0,
+    );
+
+    assert_eq!(page.rgb(60, 30), RED);
+    assert_eq!(page.rgb(90, 30), RED);
+    assert_eq!(page.rgb(110, 30), WHITE);
+    assert_eq!(page.rgb(60, 70), WHITE);
+}
+
+#[test]
+fn zooming_out_halves_the_painted_box() {
+    let page = paint_scaled(
+        "<div style='width: 100px; height: 40px; background-color: #ff0000'></div>",
+        "",
+        0.0,
+        0.5,
+    );
+
+    assert_eq!(page.rgb(20, 10), RED);
+    assert_eq!(page.rgb(60, 10), WHITE);
+    assert_eq!(page.rgb(20, 30), WHITE);
+}
+
+#[test]
+fn scrolling_is_measured_in_screen_pixels_when_zoomed() {
+    let page = paint_scaled(
+        "<div style='width: 40px; height: 20px; background-color: #ff0000'></div>",
+        "",
+        20.0,
+        2.0,
+    );
+
+    assert_eq!(page.rgb(60, 10), RED);
+    assert_eq!(page.rgb(60, 40), WHITE);
 }

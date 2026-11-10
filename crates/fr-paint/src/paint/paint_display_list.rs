@@ -10,15 +10,18 @@ pub fn paint_display_list(
     engine: &mut TextEngine,
     list: &DisplayList,
     scroll_y: f32,
+    scale: f32,
 ) {
     let viewport_height = canvas.height() as f32;
     for item in &list.items {
         let rect = item.rect();
-        let top = rect.origin.y - scroll_y;
-        if top > viewport_height || top + rect.size.height < 0.0 {
+        let top = rect.origin.y * scale - scroll_y;
+        let height = rect.size.height * scale;
+        if top > viewport_height || top + height < 0.0 {
             continue;
         }
-        let destination = Rect::from_xywh(rect.origin.x, top, rect.size.width, rect.size.height);
-        paint_item(canvas, engine, item, destination);
+        let destination =
+            Rect::from_xywh(rect.origin.x * scale, top, rect.size.width * scale, height);
+        paint_item(canvas, engine, item, destination, scale);
     }
 }

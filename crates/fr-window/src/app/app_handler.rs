@@ -143,9 +143,21 @@ impl<S: RenderScene> ApplicationHandler for AppHandler<S> {
                     window.request_redraw();
                 }
             }
-            WindowEvent::MouseWheel { delta, .. } => self.dispatch(InputEvent::Wheel {
-                delta_y: translate_wheel(delta),
-            }),
+            WindowEvent::MouseWheel { delta, .. } => {
+                let delta_y = translate_wheel(delta);
+                if self.modifiers.control_key() {
+                    let key = if delta_y < 0.0 {
+                        KeyInput::ZoomIn
+                    } else {
+                        KeyInput::ZoomOut
+                    };
+                    if delta_y != 0.0 {
+                        self.dispatch(InputEvent::Key(key));
+                    }
+                } else {
+                    self.dispatch(InputEvent::Wheel { delta_y });
+                }
+            }
             WindowEvent::KeyboardInput { event, .. } => {
                 if event.state != ElementState::Pressed {
                     return;

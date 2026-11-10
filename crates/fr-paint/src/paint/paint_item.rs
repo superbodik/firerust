@@ -12,6 +12,7 @@ pub fn paint_item(
     engine: &mut TextEngine,
     item: &DisplayItem,
     destination: Rect,
+    scale: f32,
 ) {
     match item {
         DisplayItem::Rect { color, .. } => fill_rect(canvas, destination, *color),
@@ -25,7 +26,15 @@ pub fn paint_item(
         DisplayItem::Text {
             alignment, runs, ..
         } => {
-            let text_runs: Vec<_> = runs.iter().map(|run| run.as_text_run()).collect();
+            let text_runs: Vec<_> = runs
+                .iter()
+                .map(|run| {
+                    let mut text_run = run.as_text_run();
+                    text_run.font_size *= scale;
+                    text_run.line_height *= scale;
+                    text_run
+                })
+                .collect();
             let mut shaped = shape_runs(engine, &text_runs, destination.size.width, *alignment);
             shaped.draw(engine, canvas, destination.origin);
         }
