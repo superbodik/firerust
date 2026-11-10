@@ -30,4 +30,5 @@ fr-paint = { version = "0.0.1", path = "crates/fr-paint" }
 fr-page = { version = "0.0.1", path = "crates/fr-page" }
 fr-raster = { version = "0.0.1", path = "crates/fr-raster" }
 fr-text = { version = "0.0.1", path = "crates/fr-text" }
+fr-ui = { version = "0.0.1", path = "crates/fr-ui" }
 fr-window = { version = "0.0.1", path = "crates/fr-window" }

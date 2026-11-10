@@ -3,6 +3,7 @@ use fr_paint::display::display_list::DisplayList;
 
 pub struct CachedLayout {
     pub width: u32,
+    pub height: f32,
     pub background: Rgba,
     pub list: DisplayList,
 }

@@ -3,19 +3,24 @@ use std::sync::Arc;
 use fr_raster::surface::canvas::Canvas;
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
-use winit::event::WindowEvent;
+use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::window::{Window, WindowId};
 
 use crate::app::window_config::WindowConfig;
+use crate::input::input_event::InputEvent;
+use crate::input::translate_key::translate_key;
+use crate::input::translate_wheel::translate_wheel;
 use crate::present::softbuffer_presenter::SoftbufferPresenter;
 use crate::scene::render_scene::RenderScene;
+use crate::scene::scene_reaction::SceneReaction;
 
 pub struct AppHandler<S: RenderScene> {
     config: WindowConfig,
     scene: S,
     window: Option<Arc<Window>>,
     presenter: Option<SoftbufferPresenter>,
+    cursor: (f32, f32),
 }
 
 impl<S: RenderScene> AppHandler<S> {
@@ -25,6 +30,15 @@ impl<S: RenderScene> AppHandler<S> {
             scene,
             window: None,
             presenter: None,
+            cursor: (0.0, 0.0),
+        }
+    }
+
+    fn dispatch(&mut self, event: InputEvent) {
+        if self.scene.handle(event) == SceneReaction::Redraw
+            && let Some(window) = self.window.as_ref()
+        {
+            window.request_redraw();
         }
     }
 
@@ -87,6 +101,27 @@ impl<S: RenderScene> ApplicationHandler for AppHandler<S> {
                 if let Some(window) = self.window.as_ref() {
                     window.request_redraw();
                 }
+            }
+            WindowEvent::MouseWheel { delta, .. } => self.dispatch(InputEvent::Wheel {
+                delta_y: translate_wheel(delta),
+            }),
+            WindowEvent::KeyboardInput { event, .. } => {
+                if event.state == ElementState::Pressed
+                    && let Some(key) = translate_key(&event.logical_key)
+                {
+                    self.dispatch(InputEvent::Key(key));
+                }
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.cursor = (position.x as f32, position.y as f32);
+            }
+            WindowEvent::MouseInput {
+                state: ElementState::Released,
+                button: MouseButton::Left,
+                ..
+            } => {
+                let (x, y) = self.cursor;
+                self.dispatch(InputEvent::Click { x, y });
             }
             _ => {}
         }

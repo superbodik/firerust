@@ -14,4 +14,5 @@ fr-page.workspace = true
 fr-paint.workspace = true
 fr-raster.workspace = true
 fr-text.workspace = true
+fr-ui.workspace = true
 fr-window.workspace = true
