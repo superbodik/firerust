@@ -1,0 +1,9 @@
+[package]
+name = "fr-net"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+ureq.workspace = true
+url.workspace = true

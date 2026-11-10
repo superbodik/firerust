@@ -1,0 +1,11 @@
+[package]
+name = "fr-page"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+fr-dom.workspace = true
+fr-html.workspace = true
+fr-net.workspace = true
+url.workspace = true

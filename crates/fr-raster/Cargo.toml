@@ -1,0 +1,9 @@
+[package]
+name = "fr-raster"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+fr-geom.workspace = true
+tiny-skia.workspace = true

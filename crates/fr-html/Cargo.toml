@@ -1,0 +1,10 @@
+[package]
+name = "fr-html"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+fr-dom.workspace = true
+html5ever.workspace = true
+markup5ever_rcdom.workspace = true

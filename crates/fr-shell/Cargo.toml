@@ -1,0 +1,12 @@
+[package]
+name = "fr-shell"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+fr-geom.workspace = true
+fr-page.workspace = true
+fr-raster.workspace = true
+fr-text.workspace = true
+fr-window.workspace = true
