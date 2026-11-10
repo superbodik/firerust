@@ -5,7 +5,14 @@ use fr_image::decode::decoded_image::DecodedImage;
 use fr_net::load::load_url::load_url;
 use url::Url;
 
+use crate::images::shared_image_cache::{cached_image, remember_image};
+
 pub fn load_image(url: &Url) -> Option<Arc<DecodedImage>> {
+    if let Some(image) = cached_image(url.as_str()) {
+        return Some(image);
+    }
     let response = load_url(url).ok()?;
-    decode_image(&response.body).map(Arc::new)
+    let image = Arc::new(decode_image(&response.body)?);
+    remember_image(url.as_str(), &image);
+    Some(image)
 }

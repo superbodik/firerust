@@ -22,6 +22,10 @@ impl DecodedImage {
         self.height
     }
 
+    pub fn byte_len(&self) -> usize {
+        self.premultiplied_rgba.len()
+    }
+
     pub fn premultiplied_rgba(&self) -> &[u8] {
         &self.premultiplied_rgba
     }

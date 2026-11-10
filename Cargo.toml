@@ -14,11 +14,13 @@ html5ever = "0.40.1"
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
 markup5ever_rcdom = "0.40.1"
 softbuffer = "0.4.8"
+sysinfo = { version = "0.40.1", default-features = false, features = ["system"] }
 taffy = { version = "0.15.1", default-features = false, features = ["std", "flexbox", "taffy_tree"] }
 tiny-skia = "0.12.0"
 ureq = "3.5.1"
 url = "2.5.8"
 winit = "0.30.13"
+fr-cache = { version = "0.0.1", path = "crates/fr-cache" }
 fr-css = { version = "0.0.1", path = "crates/fr-css" }
 fr-dom = { version = "0.0.1", path = "crates/fr-dom" }
 fr-geom = { version = "0.0.1", path = "crates/fr-geom" }
@@ -26,6 +28,7 @@ fr-html = { version = "0.0.1", path = "crates/fr-html" }
 fr-history = { version = "0.0.1", path = "crates/fr-history" }
 fr-image = { version = "0.0.1", path = "crates/fr-image" }
 fr-layout = { version = "0.0.1", path = "crates/fr-layout" }
+fr-mem = { version = "0.0.1", path = "crates/fr-mem" }
 fr-net = { version = "0.0.1", path = "crates/fr-net" }
 fr-paint = { version = "0.0.1", path = "crates/fr-paint" }
 fr-page = { version = "0.0.1", path = "crates/fr-page" }

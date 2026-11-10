@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use fr_dom::node::node_id::NodeId;
@@ -21,6 +21,15 @@ impl ImageStore {
 
     pub fn get(&self, element: NodeId) -> Option<&Arc<DecodedImage>> {
         self.images.get(&element)
+    }
+
+    pub fn byte_len(&self) -> usize {
+        let mut seen: HashSet<*const DecodedImage> = HashSet::new();
+        self.images
+            .values()
+            .filter(|image| seen.insert(Arc::as_ptr(image)))
+            .map(|image| image.byte_len())
+            .sum()
     }
 
     pub fn len(&self) -> usize {
