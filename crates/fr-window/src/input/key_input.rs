@@ -10,4 +10,11 @@ pub enum KeyInput {
     GoBack,
     GoForward,
     Reload,
+    FocusAddress,
+    Enter,
+    Backspace,
+    Delete,
+    Escape,
+    ArrowLeft,
+    ArrowRight,
 }

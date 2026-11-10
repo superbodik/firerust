@@ -703,6 +703,7 @@ dependencies = [
  "fr-history",
  "fr-image",
  "fr-layout",
+ "fr-net",
  "fr-page",
  "fr-paint",
  "fr-raster",

@@ -1,5 +1,6 @@
 mod browser;
 mod scenes;
+mod toolbar;
 
 use std::process::ExitCode;
 

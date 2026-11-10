@@ -6,4 +6,5 @@ pub enum InputEvent {
     Key(KeyInput),
     Click { x: f32, y: f32 },
     PointerMoved { x: f32, y: f32 },
+    Character(char),
 }

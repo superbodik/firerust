@@ -11,6 +11,7 @@ fr-geom.workspace = true
 fr-history.workspace = true
 fr-image.workspace = true
 fr-layout.workspace = true
+fr-net.workspace = true
 fr-page.workspace = true
 fr-paint.workspace = true
 fr-raster.workspace = true

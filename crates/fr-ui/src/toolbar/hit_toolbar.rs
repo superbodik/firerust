@@ -1,0 +1,24 @@
+use fr_geom::geometry::point::Point;
+
+use crate::toolbar::toolbar_metrics::{TOOLBAR_HEIGHT, address_rect, button_rect};
+use crate::toolbar::toolbar_target::ToolbarTarget;
+
+pub fn hit_toolbar(point: Point, toolbar_width: f32) -> Option<ToolbarTarget> {
+    if point.y < 0.0 || point.y >= TOOLBAR_HEIGHT {
+        return None;
+    }
+    let buttons = [
+        ToolbarTarget::Back,
+        ToolbarTarget::Forward,
+        ToolbarTarget::Reload,
+    ];
+    for target in buttons {
+        if button_rect(target).is_some_and(|rect| rect.contains(point)) {
+            return Some(target);
+        }
+    }
+    if address_rect(toolbar_width).contains(point) {
+        return Some(ToolbarTarget::Address);
+    }
+    Some(ToolbarTarget::Empty)
+}

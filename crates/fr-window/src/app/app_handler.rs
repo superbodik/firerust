@@ -13,6 +13,7 @@ use crate::input::input_event::InputEvent;
 use crate::input::key_input::KeyInput;
 use crate::input::translate_key::translate_key;
 use crate::input::translate_wheel::translate_wheel;
+use crate::input::typed_characters::typed_characters;
 use crate::present::softbuffer_presenter::SoftbufferPresenter;
 use crate::scene::pointer_kind::PointerKind;
 use crate::scene::render_scene::RenderScene;
@@ -125,10 +126,17 @@ impl<S: RenderScene> ApplicationHandler for AppHandler<S> {
                 delta_y: translate_wheel(delta),
             }),
             WindowEvent::KeyboardInput { event, .. } => {
-                if event.state == ElementState::Pressed
-                    && let Some(key) = translate_key(&event.logical_key, self.modifiers)
-                {
-                    self.dispatch(InputEvent::Key(key));
+                if event.state != ElementState::Pressed {
+                    return;
+                }
+                match translate_key(&event.logical_key, self.modifiers) {
+                    Some(key) => self.dispatch(InputEvent::Key(key)),
+                    None => {
+                        let text = event.text.as_deref();
+                        for character in typed_characters(text, self.modifiers) {
+                            self.dispatch(InputEvent::Character(character));
+                        }
+                    }
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
