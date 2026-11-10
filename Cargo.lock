@@ -1118,6 +1118,7 @@ dependencies = [
  "fr-layout",
  "fr-net",
  "fr-paint",
+ "fr-security",
  "fr-test-server",
  "fr-text",
  "url",
@@ -1143,6 +1144,15 @@ version = "0.0.1"
 dependencies = [
  "fr-geom",
  "tiny-skia 0.12.0",
+]
+
+[[package]]
+name = "fr-security"
+version = "0.0.1"
+dependencies = [
+ "fr-dom",
+ "fr-html",
+ "url",
 ]
 
 [[package]]

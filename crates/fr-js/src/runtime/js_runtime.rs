@@ -48,6 +48,11 @@ impl JsRuntime {
         Ok(runtime)
     }
 
+    pub fn forbid_inline_handlers(&mut self) -> Result<(), JsFailure> {
+        self.call_host("forbidInlineHandlers", &[])?;
+        Ok(())
+    }
+
     pub fn run_script(&mut self, source: &str) -> Result<(), JsFailure> {
         let outcome = self.context.eval(Source::from_bytes(source));
         self.settle();

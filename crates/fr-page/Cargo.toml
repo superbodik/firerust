@@ -12,6 +12,7 @@ fr-html.workspace = true
 fr-image.workspace = true
 fr-js.workspace = true
 fr-net.workspace = true
+fr-security.workspace = true
 url.workspace = true
 
 [dev-dependencies]

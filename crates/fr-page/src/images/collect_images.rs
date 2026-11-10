@@ -9,13 +9,20 @@ use fr_dom::tree::document::Document;
 use fr_dom::tree::edge::Edge;
 use fr_image::decode::decoded_image::DecodedImage;
 use fr_image::store::image_store::ImageStore;
+use fr_security::fetch::resource_kind::ResourceKind;
+use fr_security::guard::page_guard::PageGuard;
 use url::Url;
 
 use crate::images::load_image::load_image;
 
 const MAX_DOWNLOADS: usize = 60;
 
-pub fn collect_images(document: &Document, styles: &StyleMap, base: &Url) -> ImageStore {
+pub fn collect_images(
+    document: &Document,
+    styles: &StyleMap,
+    base: &Url,
+    guard: &PageGuard,
+) -> ImageStore {
     let mut store = ImageStore::new();
     let mut cache: HashMap<String, Option<Arc<DecodedImage>>> = HashMap::new();
     let mut hidden_root: Option<NodeId> = None;
@@ -45,7 +52,7 @@ pub fn collect_images(document: &Document, styles: &StyleMap, base: &Url) -> Ima
         };
         let key = url.as_str().to_owned();
         if !cache.contains_key(&key) {
-            let image = if cache.len() < MAX_DOWNLOADS {
+            let image = if cache.len() < MAX_DOWNLOADS && guard.permit(ResourceKind::Image, &url) {
                 load_image(&url)
             } else {
                 None

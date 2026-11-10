@@ -125,12 +125,13 @@
   }
 
   var attributeHandlers = {};
+  var inlineHandlersAllowed = true;
 
   function runAttributeHandler(target, event) {
     if (!target || target.nodeType !== 1) {
       return;
     }
-    var code = target.getAttribute('on' + event.type);
+    var code = inlineHandlersAllowed ? target.getAttribute('on' + event.type) : null;
     if (code === null) {
       return;
     }
@@ -1325,6 +1326,9 @@
     nextTimer: function () {
       var timer = nextDueTimer();
       return timer ? timer.due : null;
+    },
+    forbidInlineHandlers: function () {
+      inlineHandlersAllowed = false;
     }
   };
   define(global, '__frHost', host);

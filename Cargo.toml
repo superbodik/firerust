@@ -37,6 +37,7 @@ fr-layout = { version = "0.0.1", path = "crates/fr-layout" }
 fr-mem = { version = "0.0.1", path = "crates/fr-mem" }
 fr-net = { version = "0.0.1", path = "crates/fr-net" }
 fr-paint = { version = "0.0.1", path = "crates/fr-paint" }
+fr-security = { version = "0.0.1", path = "crates/fr-security" }
 fr-page = { version = "0.0.1", path = "crates/fr-page" }
 fr-raster = { version = "0.0.1", path = "crates/fr-raster" }
 fr-tab = { version = "0.0.1", path = "crates/fr-tab" }

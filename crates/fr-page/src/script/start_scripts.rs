@@ -1,5 +1,7 @@
 use fr_dom::tree::shared_document::SharedDocument;
 use fr_js::runtime::js_runtime::JsRuntime;
+use fr_security::fetch::resource_kind::ResourceKind;
+use fr_security::guard::page_guard::PageGuard;
 use url::Url;
 
 use crate::script::collect_scripts::collect_scripts;
@@ -19,11 +21,25 @@ pub fn start_scripts(document: &SharedDocument, url: &Url) -> Option<JsRuntime> 
             return None;
         }
     };
+    let guard = PageGuard::new(&document.borrow(), url);
+    let inline_allowed = guard.allows_inline(ResourceKind::Script);
+    if !inline_allowed && let Err(error) = runtime.forbid_inline_handlers() {
+        eprintln!("script error: {error}");
+    }
     let scripts = collect_scripts(&document.borrow(), url);
     for script in scripts {
         let text = match &script {
+            ScriptSource::Inline(_) if !inline_allowed => {
+                eprintln!("blocked inline script: content security policy");
+                continue;
+            }
             ScriptSource::Inline(text) => Some(text.clone()),
-            ScriptSource::External(address) => load_script_text(address),
+            ScriptSource::External(address) => {
+                if !guard.permit(ResourceKind::Script, address) {
+                    continue;
+                }
+                load_script_text(address)
+            }
         };
         let Some(text) = text else {
             if let ScriptSource::External(address) = &script {

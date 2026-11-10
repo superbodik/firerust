@@ -1,0 +1,12 @@
+[package]
+name = "fr-security"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+fr-dom.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+fr-html.workspace = true
