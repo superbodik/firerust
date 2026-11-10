@@ -41,6 +41,7 @@ The goal is simple: open simple and medium-complexity sites while using noticeab
 - A readable error page when a page cannot be opened
 - Tabs: new tab, close, switch; background tabs beyond the two most recently used drop their page from memory and are fetched again when selected
 - A shared byte-limited image cache and a memory panel (`Ctrl+M`)
+- JavaScript on [Boa](https://github.com/boa-dev/boa): inline and external scripts, `DOMContentLoaded` and `load`, `document` and element APIs (queries, creating and moving nodes, `textContent`, `innerHTML`, attributes, `classList`, `style`), events with capture and bubbling phases, `onclick` attributes and properties, `setTimeout`, `setInterval`, `requestAnimationFrame`, `console`, `localStorage`
 - Deeply nested documents are safe: layout runs on a large stack and the tree is freed iteratively
 
 Pages that load and lay out: Hacker News, example.com, CERN, NPR, Lobsters.
@@ -63,6 +64,13 @@ A small linked site for trying navigation:
 cargo run -p fr-shell -- tests/pages/site/index.html
 ```
 
+JavaScript demos, a counter with a timer and a drop-down menu:
+
+```
+cargo run -p fr-shell -- tests/pages/js_counter.html
+cargo run -p fr-shell -- tests/pages/js_menu.html
+```
+
 An address works too, and several addresses open as tabs:
 
 ```
@@ -78,10 +86,11 @@ The point of the project. First measurements on Windows 11 with a release build,
 
 | Case | firerust | Firefox |
 |---|---|---|
-| One simple page | 5.6 to 6.7 MB, 1 process | 310 to 330 MB, 11 processes |
-| 8 tabs (local pages, example.com, Hacker News, lobste.rs, rust-lang.org) | 7.4 MB, 1 process | 420 to 590 MB, 15 processes |
+| One simple page | 5.6 to 6.7 MB, 1 process | 310 to 350 MB, 11 processes |
+| One page with scripts (a counter, a menu) | 7.5 MB, 1 process | 325 to 330 MB, 11 processes |
+| 8 tabs, scripts running (local pages, example.com, Hacker News, lobste.rs, rust-lang.org) | 16.8 MB, 1 process | 420 to 590 MB, 15 processes |
 
-This is not a fair fight yet: firerust has no JavaScript, only part of HTML and CSS, no web fonts and no media, so these numbers are a lower bound and will grow as features arrive. The benchmark script is [tools/mem-bench/mem-bench.ps1](tools/mem-bench/mem-bench.ps1).
+This is not a fair fight yet: firerust runs only a small part of the web platform (no `fetch`, no layout APIs for scripts), only part of HTML and CSS, no web fonts and no media, so these numbers are a lower bound and will grow as features arrive. The script engine itself costs about 2 MB per page that uses it. The benchmark script is [tools/mem-bench/mem-bench.ps1](tools/mem-bench/mem-bench.ps1).
 
 ## Architecture
 
@@ -91,6 +100,7 @@ Every crate has one responsibility. Every file holds one type or one function.
 fr-shell ─ binary: entry point and scenes
  ├─ fr-window   window (winit), input events, frame output (softbuffer)
  ├─ fr-ui       scroll state, address field, toolbar geometry (no window needed)
+ ├─ fr-js       JavaScript runtime on Boa: DOM, events, timers
  ├─ fr-tab      tabs, unloading of background tabs, memory estimates
  ├─ fr-history  back / forward stack with scroll positions
  ├─ fr-cache    byte-limited LRU cache
@@ -123,7 +133,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-About 380 tests pass. One network test is run manually:
+About 520 tests pass. One network test is run manually:
 
 ```
 cargo test -p fr-page --test real_sites -- --ignored
@@ -142,8 +152,8 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 | 4 | Layout | done |
 | 5 | Navigation and UI: address bar, back / forward, link clicks, scrolling | done |
 | 6 | Tabs and memory | done |
-| 7 | JavaScript | next |
-| 8 | Network and forms | planned |
+| 7 | JavaScript | done |
+| 8 | Network and forms | next |
 | 9 | Security and polish | planned |
 
 ## Known limitations
@@ -157,7 +167,7 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 - No `float` or `position`
 - Tables have no `valign` or `border-spacing`
 - UTF-8 pages only
-- No JavaScript
+- JavaScript: no `fetch` or `XMLHttpRequest`, no `document.write`, scripts see no element sizes, only clicks and timers reach pages (no hover or keyboard events yet), the whole document is restyled after every change
 
 ## Built with
 
