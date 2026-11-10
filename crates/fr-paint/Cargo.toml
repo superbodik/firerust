@@ -1,0 +1,17 @@
+[package]
+name = "fr-paint"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+fr-geom.workspace = true
+fr-image.workspace = true
+fr-layout.workspace = true
+fr-raster.workspace = true
+fr-text.workspace = true
+
+[dev-dependencies]
+fr-css.workspace = true
+fr-dom.workspace = true
+fr-html.workspace = true

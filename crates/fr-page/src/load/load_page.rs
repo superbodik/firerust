@@ -6,8 +6,7 @@ use fr_html::parse::parse_html::parse_html;
 use fr_net::address::resolve_address::resolve_address;
 use fr_net::load::load_url::load_url;
 
-use crate::lines::canvas_background::canvas_background;
-use crate::lines::page_lines::page_lines;
+use crate::images::collect_images::collect_images;
 use crate::load::page::Page;
 use crate::load::page_error::PageError;
 use crate::style::collect_author_sheets::collect_author_sheets;
@@ -20,10 +19,12 @@ pub fn load_page(input: &str, base_dir: &Path) -> Result<Page, PageError> {
     let document = parse_html(&html);
     let author_sheets = collect_author_sheets(&document, &response.url);
     let styles = compute_styles(&document, &user_agent_sheet(), &author_sheets);
+    let images = collect_images(&document, &styles, &response.url);
     Ok(Page {
         title: document_title(&document),
-        background: canvas_background(&document, &styles),
-        lines: page_lines(&document, &styles),
         url: response.url,
+        document,
+        styles,
+        images,
     })
 }

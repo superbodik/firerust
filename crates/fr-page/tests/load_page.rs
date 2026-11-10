@@ -1,27 +1,26 @@
+mod support;
+
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use fr_geom::color::rgba::Rgba;
 use fr_net::address::address_error::AddressError;
 use fr_net::load::net_error::NetError;
-use fr_page::lines::line::Line;
 use fr_page::load::load_page::load_page;
 use fr_page::load::page_error::PageError;
+use support::{box_of_first, layout_of, texts};
 
 fn pages_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/pages")
 }
 
-fn texts(lines: &[Line]) -> Vec<String> {
-    lines.iter().map(Line::plain_text).collect()
-}
-
 #[test]
-fn a_plain_page_is_read_to_lines() {
+fn a_plain_page_gives_its_paragraphs() {
     let page = load_page("plain.html", &pages_dir()).expect("page");
 
     assert_eq!(page.title.as_deref(), Some("Plain page"));
     assert_eq!(
-        texts(&page.lines),
+        texts(&layout_of(&page, 800.0)),
         vec![
             "Hello firerust",
             "This is a plain page with bold and italic text.",
@@ -35,8 +34,8 @@ fn nesting_scripts_and_lists_are_handled() {
     let page = load_page("nested.html", &pages_dir()).expect("page");
 
     assert_eq!(
-        texts(&page.lines),
-        vec!["Level three", "\u{2022} One", "\u{2022} Two"]
+        texts(&layout_of(&page, 800.0)),
+        vec!["Level three", "One", "Two"]
     );
 }
 
@@ -45,8 +44,8 @@ fn entities_and_line_breaks_are_handled() {
     let page = load_page("entities.html", &pages_dir()).expect("page");
 
     assert_eq!(
-        texts(&page.lines),
-        vec!["Fish & Chips <3 \u{a9} 2026", "Line one", "Line two"]
+        texts(&layout_of(&page, 800.0)),
+        vec!["Fish & Chips <3 \u{a9} 2026", "Line one\nLine two"]
     );
 }
 
@@ -56,7 +55,7 @@ fn cyrillic_text_is_read() {
 
     assert_eq!(page.title.as_deref(), Some("Українська сторінка"));
     assert_eq!(
-        texts(&page.lines),
+        texts(&layout_of(&page, 800.0)),
         vec!["Привіт, світе!", "Це сторінка українською мовою."]
     );
 }
@@ -65,66 +64,75 @@ fn cyrillic_text_is_read() {
 fn the_blog_reads_styles_from_three_places() {
     let page = load_page("blog.html", &pages_dir()).expect("page");
 
+    let tree = layout_of(&page, 800.0);
     assert_eq!(page.title.as_deref(), Some("Rust blog"));
     assert_eq!(
-        texts(&page.lines),
+        texts(&tree),
         vec![
             "Rust blog",
             "Why a small browser",
             "Less memory is a feature.",
             "Read the plain page or the bold notes.",
             "Note: styles come from three places.",
-            "\u{2022} External sheet",
-            "\u{2022} Style element",
-            "\u{2022} Inline attribute",
+            "External sheet",
+            "Style element",
+            "Inline attribute",
         ]
     );
+    assert_eq!(tree.background, Rgba::opaque(0xf4, 0xf1, 0xea));
 }
 
 #[test]
-fn the_blog_external_sheet_sets_the_canvas_and_the_header() {
+fn the_blog_header_is_a_real_padded_box_with_a_background() {
     let page = load_page("blog.html", &pages_dir()).expect("page");
 
-    assert_eq!(page.background, Rgba::opaque(0xf4, 0xf1, 0xea));
-    let header = &page.lines[0];
-    assert_eq!(header.runs[0].style.color, Rgba::WHITE);
-    assert_eq!(header.runs[0].style.font_size, 32.0);
-    assert_eq!(
-        header.background.map(|backdrop| backdrop.color),
-        Some(Rgba::opaque(0xb7, 0x41, 0x0e))
-    );
-    assert_eq!(header.indent, 24.0);
+    let tree = layout_of(&page, 800.0);
+    let header = box_of_first(&tree, &page.document, "header").expect("header box");
+    assert_eq!(header.background, Rgba::opaque(0xb7, 0x41, 0x0e));
+    assert_eq!(header.border_box.origin.x, 8.0);
+    assert_eq!(header.border_box.size.width, 784.0);
+    let heading = box_of_first(&tree, &page.document, "h1").expect("h1 box");
+    assert_eq!(heading.border_box.origin.x, 24.0);
 }
 
 #[test]
-fn the_blog_style_element_and_inline_style_apply() {
-    let page = load_page("blog.html", &pages_dir()).expect("page");
+fn images_are_downloaded_decoded_and_shared() {
+    let page = load_page("images.html", &pages_dir()).expect("page");
 
-    let lead = &page.lines[2];
-    assert_eq!(lead.runs[0].style.font_size, 20.0);
-    assert_eq!(lead.runs[0].style.color, Rgba::opaque(0x44, 0x44, 0x44));
-
-    let note = &page.lines[4];
-    assert_eq!(note.runs[0].style.color, Rgba::opaque(0x8a, 0x6d, 0x3b));
-    assert_eq!(
-        note.background.map(|backdrop| backdrop.color),
-        Some(Rgba::opaque(0xff, 0xf3, 0xcd))
-    );
+    assert_eq!(page.images.len(), 4);
 }
 
 #[test]
-fn the_blog_link_and_heading_take_author_colors() {
-    let page = load_page("blog.html", &pages_dir()).expect("page");
+fn the_same_image_address_is_decoded_once() {
+    use fr_dom::tree::edge::Edge;
 
-    let heading = &page.lines[1];
-    assert_eq!(heading.runs[0].style.color, Rgba::opaque(0xb7, 0x41, 0x0e));
-    let paragraph = &page.lines[3];
-    let link = paragraph
-        .runs
-        .iter()
-        .find(|run| run.text.contains("plain page"))
-        .expect("link run");
-    assert_eq!(link.style.color, Rgba::opaque(0x0b, 0x53, 0x94));
+    let page = load_page("images.html", &pages_dir()).expect("page");
+
+    let gradients: Vec<_> = page
+        .document
+        .walk(page.document.root())
+        .filter_map(|edge| match edge {
+            Edge::Enter(id) => {
+                let element = page.document.node(id)?.kind().as_element()?;
+                (element.attribute("src") == Some("gradient.png")).then_some(id)
+            }
+            Edge::Leave(_) => None,
+        })
+        .collect();
+    assert_eq!(gradients.len(), 2);
+    let first = page.images.get(gradients[0]).expect("first");
+    let second = page.images.get(gradients[1]).expect("second");
+    assert!(Arc::ptr_eq(first, second));
+}
+
+#[test]
+fn a_page_with_images_lays_out_with_their_sizes() {
+    let page = load_page("images.html", &pages_dir()).expect("page");
+
+    let tree = layout_of(&page, 800.0);
+    let first_image = box_of_first(&tree, &page.document, "img").expect("img box");
+    assert_eq!(first_image.border_box.size.width, 240.0);
+    assert_eq!(first_image.border_box.size.height, 120.0);
 }
 
 #[test]
@@ -133,13 +141,6 @@ fn the_page_keeps_its_address() {
 
     assert_eq!(page.url.scheme(), "file");
     assert!(page.url.path().ends_with("/plain.html"));
-}
-
-#[test]
-fn a_missing_stylesheet_does_not_break_the_page() {
-    let page = load_page("plain.html", &pages_dir()).expect("page");
-
-    assert!(!page.lines.is_empty());
 }
 
 #[test]

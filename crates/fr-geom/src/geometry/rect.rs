@@ -16,6 +16,13 @@ impl Rect {
         Self::new(Point::new(x, y), Size::new(width, height))
     }
 
+    pub fn contains(&self, point: Point) -> bool {
+        point.x >= self.origin.x
+            && point.x < self.right()
+            && point.y >= self.origin.y
+            && point.y < self.bottom()
+    }
+
     pub fn right(&self) -> f32 {
         self.origin.x + self.size.width
     }

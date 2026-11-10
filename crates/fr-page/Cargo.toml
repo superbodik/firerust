@@ -7,7 +7,13 @@ publish.workspace = true
 [dependencies]
 fr-css.workspace = true
 fr-dom.workspace = true
-fr-geom.workspace = true
 fr-html.workspace = true
+fr-image.workspace = true
 fr-net.workspace = true
 url.workspace = true
+
+[dev-dependencies]
+fr-layout.workspace = true
+fr-paint.workspace = true
+fr-geom.workspace = true
+fr-text.workspace = true

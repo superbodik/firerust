@@ -1,5 +1,9 @@
+pub mod content_widths;
 pub mod line_metrics;
+pub mod measure_runs;
 pub mod shape_runs;
 pub mod shaped_text;
 pub mod span_attrs;
+pub mod text_alignment;
+pub mod text_family;
 pub mod text_run;

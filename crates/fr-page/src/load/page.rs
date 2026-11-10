@@ -1,12 +1,13 @@
-use fr_geom::color::rgba::Rgba;
+use fr_css::cascade::style_map::StyleMap;
+use fr_dom::tree::document::Document;
+use fr_image::store::image_store::ImageStore;
 use url::Url;
-
-use crate::lines::line::Line;
 
 #[derive(Debug, Clone)]
 pub struct Page {
     pub url: Url,
     pub title: Option<String>,
-    pub background: Rgba,
-    pub lines: Vec<Line>,
+    pub document: Document,
+    pub styles: StyleMap,
+    pub images: ImageStore,
 }

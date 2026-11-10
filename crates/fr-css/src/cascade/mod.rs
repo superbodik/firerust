@@ -3,6 +3,7 @@ pub mod compute_style;
 pub mod compute_styles;
 pub mod computed_style;
 pub mod origin;
+pub mod presentational_hints;
 pub mod specified_style;
 pub mod specify_style;
 pub mod style_map;

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Images</title>
+<style>
+.center { text-align: center; }
+img.wide { max-width: 100%; }
+.frame { border: 2px solid #b7410e; padding: 6px; background-color: #fff8f0; margin-top: 12px; }
+</style>
+</head>
+<body>
+<h1>Images</h1>
+<p>A PNG with a transparent hole, natural size:</p>
+<p><img src="gradient.png" alt="Gradient"></p>
+<p>The same PNG scaled by the width attribute:</p>
+<p><img src="gradient.png" width="120" alt="Small gradient"></p>
+<div class="center"><p>A centered JPEG that never gets wider than the page:</p><img class="wide" src="photo.jpg" alt="Photo"></div>
+<div class="frame"><p>A GIF inside a framed block:</p><img src="badge.gif" alt="Badge" width="32" height="32"> and text after it.</div>
+<p>A missing image falls back to its alt text: <img src="missing.png" alt="[missing picture]"></p>
+</body>
+</html>

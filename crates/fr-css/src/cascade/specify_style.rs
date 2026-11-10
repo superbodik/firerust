@@ -4,6 +4,7 @@ use fr_dom::tree::document::Document;
 
 use crate::cascade::candidate::Candidate;
 use crate::cascade::origin::Origin;
+use crate::cascade::presentational_hints::presentational_hints;
 use crate::cascade::specified_style::SpecifiedStyle;
 use crate::parse::parse_inline_style::parse_inline_style;
 use crate::parse::rule::Rule;
@@ -22,7 +23,14 @@ pub fn specify_style(
         .attribute("style")
         .map(parse_inline_style)
         .unwrap_or_default();
+    let hints = presentational_hints(data);
     let mut candidates: Vec<Candidate<'_>> = Vec::new();
+    for (index, declaration) in hints.iter().enumerate() {
+        candidates.push(Candidate {
+            key: (false, 0, 0, 0, index),
+            declaration,
+        });
+    }
 
     for (order, (origin, rule)) in rules.iter().enumerate() {
         let Some(specificity) = rule

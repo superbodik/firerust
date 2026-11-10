@@ -1,13 +1,25 @@
 use cssparser::Parser;
 
 use crate::parse::declaration::Declaration;
+use crate::parse::parse_align_items::parse_align_items;
 use crate::parse::parse_background::parse_background;
 use crate::parse::parse_border::parse_border;
+use crate::parse::parse_box_sizing::parse_box_sizing;
 use crate::parse::parse_color::parse_color;
 use crate::parse::parse_display::parse_display;
 use crate::parse::parse_edges::parse_edges;
+use crate::parse::parse_flex::parse_flex;
+use crate::parse::parse_flex_direction::parse_flex_direction;
+use crate::parse::parse_flex_wrap::parse_flex_wrap;
+use crate::parse::parse_font_family::parse_font_family;
+use crate::parse::parse_font_style::parse_font_style;
 use crate::parse::parse_font_weight::parse_font_weight;
+use crate::parse::parse_gap::parse_gap;
+use crate::parse::parse_justify_content::parse_justify_content;
 use crate::parse::parse_length::parse_length;
+use crate::parse::parse_line_height::parse_line_height;
+use crate::parse::parse_text_align::parse_text_align;
+use crate::parse::parse_white_space::parse_white_space;
 use crate::parse::side_from_name::side_from_name;
 use crate::value::edges::Edges;
 use crate::value::length::Length;
@@ -15,25 +27,57 @@ use crate::value::side::Side;
 
 pub fn parse_property(name: &str, parser: &mut Parser<'_>) -> Option<Vec<Declaration>> {
     match name {
-        "color" => parse_color(parser).map(|value| vec![Declaration::Color(value)]),
-        "background-color" => {
-            parse_color(parser).map(|value| vec![Declaration::BackgroundColor(value)])
-        }
-        "background" => {
-            parse_background(parser).map(|value| vec![Declaration::BackgroundColor(value)])
-        }
-        "font-size" => parse_length(parser).map(|value| vec![Declaration::FontSize(value)]),
-        "font-weight" => {
-            parse_font_weight(parser).map(|value| vec![Declaration::FontWeight(value)])
-        }
-        "display" => parse_display(parser).map(|value| vec![Declaration::Display(value)]),
+        "color" => single(parse_color(parser), Declaration::Color),
+        "background-color" => single(parse_color(parser), Declaration::BackgroundColor),
+        "background" => single(parse_background(parser), Declaration::BackgroundColor),
+        "font-size" => single(parse_length(parser), Declaration::FontSize),
+        "font-weight" => single(parse_font_weight(parser), Declaration::FontWeight),
+        "font-style" => single(parse_font_style(parser), Declaration::FontStyle),
+        "font-family" => single(parse_font_family(parser), Declaration::FontFamily),
+        "line-height" => single(parse_line_height(parser), Declaration::LineHeight),
+        "text-align" => single(parse_text_align(parser), Declaration::TextAlign),
+        "white-space" => single(parse_white_space(parser), Declaration::WhiteSpace),
+        "display" => single(parse_display(parser), Declaration::Display),
+        "box-sizing" => single(parse_box_sizing(parser), Declaration::BoxSizing),
+        "width" => single(parse_length(parser), Declaration::Width),
+        "height" => single(parse_length(parser), Declaration::Height),
+        "min-width" => single(parse_length(parser), Declaration::MinWidth),
+        "max-width" => single(parse_max_width(parser), Declaration::MaxWidth),
         "margin" => parse_edges(parser).map(|edges| expand(edges, Declaration::Margin)),
         "padding" => parse_edges(parser).map(|edges| expand(edges, Declaration::Padding)),
         "border-width" => parse_edges(parser).map(|edges| expand(edges, Declaration::BorderWidth)),
-        "border-color" => parse_color(parser).map(|value| vec![Declaration::BorderColor(value)]),
+        "border-color" => single(parse_color(parser), Declaration::BorderColor),
         "border" => parse_border(parser, &Side::ALL),
+        "flex-direction" => single(parse_flex_direction(parser), Declaration::FlexDirection),
+        "flex-wrap" => single(parse_flex_wrap(parser), Declaration::FlexWrap),
+        "justify-content" => single(parse_justify_content(parser), Declaration::JustifyContent),
+        "align-items" => single(parse_align_items(parser), Declaration::AlignItems),
+        "gap" | "grid-gap" => parse_gap(parser),
+        "row-gap" => single(parse_length(parser), Declaration::RowGap),
+        "column-gap" => single(parse_length(parser), Declaration::ColumnGap),
+        "flex" => parse_flex(parser),
+        "flex-grow" => single(parse_number(parser), Declaration::FlexGrow),
+        "flex-shrink" => single(parse_number(parser), Declaration::FlexShrink),
+        "flex-basis" => single(parse_length(parser), Declaration::FlexBasis),
         _ => parse_sided(name, parser),
     }
+}
+
+fn single<T>(value: Option<T>, make: fn(T) -> Declaration) -> Option<Vec<Declaration>> {
+    value.map(|inner| vec![make(inner)])
+}
+
+fn parse_max_width(parser: &mut Parser<'_>) -> Option<Length> {
+    let keyword = parser.try_parse(|inner| inner.expect_ident_matching("none"));
+    if keyword.is_ok() {
+        return Some(Length::Auto);
+    }
+    parse_length(parser)
+}
+
+fn parse_number(parser: &mut Parser<'_>) -> Option<f32> {
+    let value = parser.expect_number().ok()?;
+    (value >= 0.0).then_some(value)
 }
 
 fn expand(edges: Edges<Length>, make: fn(Side, Length) -> Declaration) -> Vec<Declaration> {

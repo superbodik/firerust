@@ -23,6 +23,13 @@ impl ShapedText {
             .sum()
     }
 
+    pub fn width(&self) -> f32 {
+        self.buffer
+            .layout_runs()
+            .map(|layout| layout.line_w)
+            .fold(0.0, f32::max)
+    }
+
     pub fn draw(&mut self, engine: &mut TextEngine, canvas: &mut Canvas, origin: Point) {
         let (font_system, swash_cache) = engine.parts_mut();
         self.buffer.draw(

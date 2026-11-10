@@ -1,5 +1,16 @@
+pub mod align_items;
+pub mod box_sizing;
 pub mod display;
 pub mod edges;
+pub mod flex_direction;
+pub mod flex_style;
+pub mod font_family;
+pub mod font_style;
+pub mod justify_content;
 pub mod length;
+pub mod line_height;
 pub mod named_color;
 pub mod side;
+pub mod size_style;
+pub mod text_align;
+pub mod white_space;

@@ -1,0 +1,9 @@
+[package]
+name = "fr-image"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+fr-dom.workspace = true
+image.workspace = true
