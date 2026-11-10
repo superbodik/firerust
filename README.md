@@ -170,10 +170,9 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 
 ## Known limitations
 
-- Loading blocks the window while a page is fetched
 - Content security policy is read only from the meta tag, not from response headers; no nonces or hashes
 - Form controls take a line of their own, a select changes on click without a drop-down, no file upload, no `reset` button, no form validation; cookies live only in memory; going back after a POST asks the address again with GET
-- Switching to an unloaded tab reloads it and blocks the window; several start addresses load one after another
+- Scripts and the final page build still run on the window thread, so a heavy page can stall the window while it is built; several start addresses after the first load one after another
 - No page zoom yet; links to `#fragment` do not scroll to the anchor
 - Back and forward reload the page, there is no page cache yet
 - The last tab cannot be closed

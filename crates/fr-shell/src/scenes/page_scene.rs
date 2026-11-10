@@ -9,7 +9,9 @@ use fr_layout::page::layout_page::layout_page_with_focus;
 use fr_mem::meter::memory_meter::MemoryMeter;
 use fr_net::load::request::Request;
 use fr_page::images::shared_image_cache::shared_image_bytes;
-use fr_page::load::blank_page::blank_page;
+use fr_page::load::blank_page::{BLANK_ADDRESS, blank_page};
+use fr_page::load::build_page::build_prefetched;
+use fr_page::load::error_page::error_page;
 use fr_page::load::page::Page;
 use fr_paint::build::build_display_list::build_display_list;
 use fr_paint::paint::paint_display_list::paint_display_list;
@@ -45,16 +47,19 @@ use crate::scenes::control_at::control_at;
 use crate::scenes::control_kind_in::control_kind_in;
 use crate::scenes::dispatch_event_to::dispatch_event_to;
 use crate::scenes::dispatch_page_click::dispatch_page_click;
-use crate::scenes::fetch_page::{fetch_page, fetch_request};
 use crate::scenes::focus_key::FocusKey;
 use crate::scenes::form_focus::FormFocus;
 use crate::scenes::form_for::form_for;
 use crate::scenes::form_request::form_request;
 use crate::scenes::link_target::link_target;
+use crate::scenes::load_target::LoadTarget;
 use crate::scenes::neighbour_in::neighbour_in;
+use crate::scenes::pending_load::PendingLoad;
 use crate::scenes::refresh_active::refresh_active;
+use crate::scenes::request_for::request_for;
 use crate::scenes::run_due_timers::run_due_timers;
 use crate::scenes::timer_delay::timer_delay;
+use crate::toolbar::draw_load_bar::draw_load_bar;
 use crate::toolbar::draw_memory_bar::draw_memory_bar;
 use crate::toolbar::draw_tab_strip::draw_tab_strip;
 use crate::toolbar::draw_toolbar::draw_toolbar;
@@ -63,6 +68,7 @@ use crate::toolbar::toolbar_state::ToolbarState;
 
 const MAX_LIVE_TABS: usize = 2;
 const MEMORY_REFRESH: Duration = Duration::from_secs(1);
+const LOAD_POLL: Duration = Duration::from_millis(33);
 
 pub struct PageScene {
     tabs: TabSet,
@@ -76,6 +82,7 @@ pub struct PageScene {
     meter: MemoryMeter,
     shows_memory: bool,
     form: FormFocus,
+    pending: Option<PendingLoad>,
 }
 
 impl PageScene {
@@ -94,6 +101,13 @@ impl PageScene {
             meter: MemoryMeter::new(),
             shows_memory: false,
             form: FormFocus::new(),
+            pending: None,
+        }
+    }
+
+    pub fn open_first(&mut self, input: &str) {
+        if let Some(request) = request_for(input) {
+            self.begin_request(request, LoadTarget::Initial);
         }
     }
 
@@ -109,13 +123,11 @@ impl PageScene {
     }
 
     fn sync_active(&mut self) {
-        if self.tabs.active().is_discarded() {
-            let address = self.tabs.active().url().to_string();
-            if let Some(page) = fetch_page(&address) {
-                self.tabs.active_mut().restore(page);
-            }
-        }
         let scroll = self.tabs.active().scroll();
+        if self.tabs.active().is_discarded() {
+            let url = self.tabs.active().url().clone();
+            self.begin_request(Request::get(url), LoadTarget::Restore { scroll });
+        }
         self.after_navigation(scroll);
         self.tabs.enforce_limit(MAX_LIVE_TABS);
     }
@@ -132,6 +144,7 @@ impl PageScene {
 
     fn switch_to(&mut self, index: usize) -> SceneReaction {
         self.remember_scroll();
+        self.pending = None;
         if !self.tabs.activate(index) {
             return SceneReaction::Idle;
         }
@@ -144,6 +157,7 @@ impl PageScene {
             return SceneReaction::Idle;
         };
         self.remember_scroll();
+        self.pending = None;
         self.tabs.open(page);
         self.sync_active();
         self.address.focus();
@@ -152,6 +166,7 @@ impl PageScene {
 
     fn close_tab(&mut self, index: usize) -> SceneReaction {
         self.remember_scroll();
+        self.pending = None;
         if !self.tabs.close(index) {
             return SceneReaction::Idle;
         }
@@ -159,18 +174,76 @@ impl PageScene {
         SceneReaction::Redraw
     }
 
-    fn open(&mut self, input: &str) -> SceneReaction {
-        match fetch_page(input) {
-            Some(page) => self.navigate(page),
-            None => SceneReaction::Redraw,
-        }
+    fn begin_request(&mut self, request: Request, target: LoadTarget) {
+        let tab = self.tabs.active().id();
+        self.address.set_text(&address_text(&request.url));
+        self.pending = Some(PendingLoad::start(request, target, tab));
     }
 
-    fn open_request(&mut self, request: &Request) -> SceneReaction {
-        match fetch_request(request) {
-            Some(page) => self.navigate(page),
-            None => SceneReaction::Redraw,
+    fn open(&mut self, input: &str) -> SceneReaction {
+        if input.trim() == BLANK_ADDRESS {
+            return match blank_page() {
+                Some(page) => self.navigate(page),
+                None => SceneReaction::Redraw,
+            };
         }
+        self.open_request(request_for(input))
+    }
+
+    fn open_request(&mut self, request: Option<Request>) -> SceneReaction {
+        if let Some(request) = request {
+            self.begin_request(request, LoadTarget::Navigate);
+        }
+        SceneReaction::Redraw
+    }
+
+    fn finish_load(&mut self) -> bool {
+        let Some(pending) = self.pending.as_ref() else {
+            return false;
+        };
+        let Some(outcome) = pending.poll() else {
+            return false;
+        };
+        let Some(pending) = self.pending.take() else {
+            return false;
+        };
+        if self.tabs.active().id() != pending.tab {
+            return false;
+        }
+        let page = match outcome {
+            Ok(prefetched) => build_prefetched(prefetched),
+            Err(message) => {
+                eprintln!("cannot open {}: {message}", pending.url);
+                error_page(pending.url.clone(), &message)
+            }
+        };
+        match pending.target {
+            LoadTarget::Initial => {
+                self.tabs
+                    .active_mut()
+                    .history_mut()
+                    .replace_current(page.url.clone());
+                self.tabs.active_mut().show(page);
+                self.after_navigation(0.0);
+            }
+            LoadTarget::Navigate => {
+                self.navigate(page);
+            }
+            LoadTarget::Travel { scroll } => {
+                self.tabs.active_mut().show(page);
+                self.after_navigation(scroll);
+            }
+            LoadTarget::Reload { scroll } => {
+                self.tabs.active_mut().show(page);
+                self.after_navigation(scroll);
+            }
+            LoadTarget::Restore { scroll } => {
+                self.tabs.active_mut().restore(page);
+                self.after_navigation(scroll);
+                self.tabs.enforce_limit(MAX_LIVE_TABS);
+            }
+        }
+        true
     }
 
     fn navigate(&mut self, page: Page) -> SceneReaction {
@@ -195,22 +268,14 @@ impl PageScene {
         let Some((url, scroll)) = entry.map(|entry| (entry.url.clone(), entry.scroll)) else {
             return SceneReaction::Idle;
         };
-        let Some(page) = fetch_page(url.as_str()) else {
-            return SceneReaction::Idle;
-        };
-        self.tabs.active_mut().show(page);
-        self.after_navigation(scroll);
+        self.begin_request(Request::get(url), LoadTarget::Travel { scroll });
         SceneReaction::Redraw
     }
 
     fn reload(&mut self) -> SceneReaction {
-        let address = self.tabs.active().url().to_string();
-        let Some(page) = fetch_page(&address) else {
-            return SceneReaction::Idle;
-        };
-        let offset = self.scroll.offset();
-        self.tabs.active_mut().show(page);
-        self.after_navigation(offset);
+        let url = self.tabs.active().url().clone();
+        let scroll = self.scroll.offset();
+        self.begin_request(Request::get(url), LoadTarget::Reload { scroll });
         SceneReaction::Redraw
     }
 
@@ -369,7 +434,7 @@ impl PageScene {
             return SceneReaction::Redraw;
         }
         match form_request(&mut self.tabs, form, submitter) {
-            Some(request) => self.open_request(&request),
+            Some(request) => self.open_request(Some(request)),
             None => SceneReaction::Idle,
         }
     }
@@ -483,6 +548,9 @@ impl RenderScene for PageScene {
             can_go_forward: self.tabs.active().history().can_go_forward(),
         };
         draw_toolbar(canvas, &mut self.text_engine, &toolbar);
+        if let Some(pending) = &self.pending {
+            draw_load_bar(canvas, pending.started.elapsed());
+        }
         if self.shows_memory {
             let process = self.meter.sample_if_stale(MEMORY_REFRESH);
             let summary = memory_summary(process, self.tabs.tabs(), shared_image_bytes());
@@ -516,12 +584,17 @@ impl RenderScene for PageScene {
     }
 
     fn next_wakeup(&mut self) -> Option<Duration> {
-        timer_delay(&mut self.tabs)
+        let timers = timer_delay(&mut self.tabs);
+        if self.pending.is_some() {
+            return Some(timers.map_or(LOAD_POLL, |delay| delay.min(LOAD_POLL)));
+        }
+        timers
     }
 
     fn tick(&mut self) -> SceneReaction {
+        let loaded = self.finish_load();
         run_due_timers(&mut self.tabs);
-        if refresh_active(&mut self.tabs) {
+        if refresh_active(&mut self.tabs) || loaded || self.pending.is_some() {
             SceneReaction::Redraw
         } else {
             SceneReaction::Idle
@@ -529,6 +602,9 @@ impl RenderScene for PageScene {
     }
 
     fn title(&self) -> Option<String> {
+        if let Some(pending) = &self.pending {
+            return Some(format!("Loading {} - firerust", pending.url));
+        }
         Some(format!("{} - firerust", self.tabs.active().title()))
     }
 

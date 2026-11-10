@@ -6,6 +6,7 @@ use fr_page::images::load_image::load_image;
 use fr_page::images::shared_image_cache::{
     IMAGE_CACHE_BYTES, cached_image, remember_image, shared_image_bytes,
 };
+use fr_page::prefetch::resource_store::ResourceStore;
 use url::Url;
 
 fn picture_url(name: &str) -> Url {
@@ -21,8 +22,8 @@ fn picture_url(name: &str) -> Url {
 fn loading_the_same_picture_twice_shares_one_decoded_copy() {
     let url = picture_url("gradient.png");
 
-    let first = load_image(&url).expect("first load");
-    let second = load_image(&url).expect("second load");
+    let first = load_image(&url, &ResourceStore::new()).expect("first load");
+    let second = load_image(&url, &ResourceStore::new()).expect("second load");
 
     assert!(Arc::ptr_eq(&first, &second));
 }
@@ -45,7 +46,7 @@ fn an_unknown_address_is_not_cached() {
 #[test]
 fn the_cache_stays_under_its_limit() {
     let url = picture_url("photo.jpg");
-    load_image(&url).expect("load");
+    load_image(&url, &ResourceStore::new()).expect("load");
 
     assert!(shared_image_bytes() <= IMAGE_CACHE_BYTES);
     assert!(shared_image_bytes() > 0);

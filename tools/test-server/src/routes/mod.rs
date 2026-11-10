@@ -14,3 +14,4 @@ pub mod route;
 pub mod search_page;
 pub mod set_cookie_page;
 pub mod show_cookie_page;
+pub mod slow_page;

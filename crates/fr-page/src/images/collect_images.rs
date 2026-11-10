@@ -13,7 +13,9 @@ use fr_security::fetch::resource_kind::ResourceKind;
 use fr_security::guard::page_guard::PageGuard;
 use url::Url;
 
+use crate::images::image_url::image_url;
 use crate::images::load_image::load_image;
+use crate::prefetch::resource_store::ResourceStore;
 
 const MAX_DOWNLOADS: usize = 60;
 
@@ -22,6 +24,7 @@ pub fn collect_images(
     styles: &StyleMap,
     base: &Url,
     guard: &PageGuard,
+    resources: &ResourceStore,
 ) -> ImageStore {
     let mut store = ImageStore::new();
     let mut cache: HashMap<String, Option<Arc<DecodedImage>>> = HashMap::new();
@@ -53,7 +56,7 @@ pub fn collect_images(
         let key = url.as_str().to_owned();
         if !cache.contains_key(&key) {
             let image = if cache.len() < MAX_DOWNLOADS && guard.permit(ResourceKind::Image, &url) {
-                load_image(&url)
+                load_image(&url, resources)
             } else {
                 None
             };
@@ -64,17 +67,4 @@ pub fn collect_images(
         }
     }
     store
-}
-
-fn image_url(document: &Document, id: NodeId, base: &Url) -> Option<Url> {
-    let source = document
-        .node(id)?
-        .kind()
-        .as_element()?
-        .attribute("src")?
-        .trim();
-    if source.is_empty() {
-        return None;
-    }
-    base.join(source).ok()
 }

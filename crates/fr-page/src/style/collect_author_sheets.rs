@@ -8,12 +8,14 @@ use fr_security::fetch::resource_kind::ResourceKind;
 use fr_security::guard::page_guard::PageGuard;
 use url::Url;
 
+use crate::prefetch::resource_store::ResourceStore;
 use crate::style::load_linked_sheet::load_linked_sheet;
 
 pub fn collect_author_sheets(
     document: &Document,
     base: &Url,
     guard: &PageGuard,
+    store: &ResourceStore,
 ) -> Vec<Stylesheet> {
     let inline_allowed = guard.allows_inline(ResourceKind::Style);
     let mut sheets: Vec<Stylesheet> = Vec::new();
@@ -26,7 +28,7 @@ pub fn collect_author_sheets(
                 sheets.push(parse_stylesheet(&text_content(document, id)));
             }
             Some("style") => eprintln!("blocked inline stylesheet: content security policy"),
-            Some("link") => sheets.extend(load_linked_sheet(document, id, base, guard)),
+            Some("link") => sheets.extend(load_linked_sheet(document, id, base, guard, store)),
             _ => {}
         }
     }

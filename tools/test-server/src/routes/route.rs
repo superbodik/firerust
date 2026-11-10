@@ -11,6 +11,7 @@ use crate::routes::plain_page::plain_page;
 use crate::routes::search_page::search_page;
 use crate::routes::set_cookie_page::set_cookie_page;
 use crate::routes::show_cookie_page::show_cookie_page;
+use crate::routes::slow_page::slow_page;
 use crate::server::http_reply::HttpReply;
 use crate::server::http_request::HttpRequest;
 
@@ -31,6 +32,7 @@ pub fn route(request: &HttpRequest) -> HttpReply {
         ("GET", "/account") => account_page(request),
         ("GET" | "POST", "/echo") => echo_page(request),
         ("GET", "/search") => search_page(request),
+        ("GET", "/slow") => slow_page(),
         _ => not_found(),
     }
 }

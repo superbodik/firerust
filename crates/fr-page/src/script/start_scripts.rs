@@ -4,13 +4,18 @@ use fr_security::fetch::resource_kind::ResourceKind;
 use fr_security::guard::page_guard::PageGuard;
 use url::Url;
 
+use crate::prefetch::resource_store::ResourceStore;
 use crate::script::collect_scripts::collect_scripts;
 use crate::script::flush_console::flush_console;
 use crate::script::load_script_text::load_script_text;
 use crate::script::needs_scripting::needs_scripting;
 use crate::script::script_source::ScriptSource;
 
-pub fn start_scripts(document: &SharedDocument, url: &Url) -> Option<JsRuntime> {
+pub fn start_scripts(
+    document: &SharedDocument,
+    url: &Url,
+    store: &ResourceStore,
+) -> Option<JsRuntime> {
     if !needs_scripting(&document.borrow()) {
         return None;
     }
@@ -38,7 +43,7 @@ pub fn start_scripts(document: &SharedDocument, url: &Url) -> Option<JsRuntime> 
                 if !guard.permit(ResourceKind::Script, address) {
                     continue;
                 }
-                load_script_text(address)
+                load_script_text(address, store)
             }
         };
         let Some(text) = text else {

@@ -41,6 +41,13 @@ impl NavigationHistory {
         self.entries.push(HistoryEntry::new(url));
     }
 
+    pub fn replace_current(&mut self, url: Url) {
+        match self.entries.get_mut(self.position) {
+            Some(entry) => *entry = HistoryEntry::new(url),
+            None => self.entries.push(HistoryEntry::new(url)),
+        }
+    }
+
     pub fn remember_scroll(&mut self, scroll: f32) {
         if let Some(entry) = self.entries.get_mut(self.position) {
             entry.scroll = scroll;

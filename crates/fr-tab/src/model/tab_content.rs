@@ -4,6 +4,7 @@ use fr_dom::tree::shared_document::SharedDocument;
 use fr_image::store::image_store::ImageStore;
 use fr_js::runtime::js_runtime::JsRuntime;
 use fr_page::load::page::Page;
+use fr_page::prefetch::resource_store::ResourceStore;
 use fr_page::script::flush_console::flush_console;
 use fr_page::style::restyle::restyle;
 use url::Url;
@@ -41,7 +42,7 @@ impl TabContent {
         if !self.is_stale() {
             return false;
         }
-        let (styles, images) = restyle(&self.document.borrow(), url);
+        let (styles, images) = restyle(&self.document.borrow(), url, &ResourceStore::new());
         self.styles = styles;
         self.images = images;
         self.layout = None;

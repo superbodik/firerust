@@ -1,3 +1,4 @@
+pub mod draw_load_bar;
 pub mod draw_memory_bar;
 pub mod draw_tab_strip;
 pub mod draw_toolbar;
