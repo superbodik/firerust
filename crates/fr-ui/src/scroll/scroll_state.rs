@@ -43,6 +43,7 @@ impl ScrollState {
             KeyInput::PageDown | KeyInput::Space => self.scroll_by(page, metrics),
             KeyInput::Home => self.scroll_to(0.0, metrics),
             KeyInput::End => self.scroll_to(metrics.max_offset(), metrics),
+            KeyInput::GoBack | KeyInput::GoForward | KeyInput::Reload => false,
         }
     }
 }

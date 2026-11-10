@@ -1,9 +1,15 @@
-use winit::keyboard::{Key, NamedKey};
+use winit::keyboard::{Key, ModifiersState, NamedKey};
 
 use crate::input::key_input::KeyInput;
 
-pub fn translate_key(key: &Key) -> Option<KeyInput> {
+pub fn translate_key(key: &Key, modifiers: ModifiersState) -> Option<KeyInput> {
     match key {
+        Key::Named(NamedKey::ArrowLeft) if modifiers.alt_key() => Some(KeyInput::GoBack),
+        Key::Named(NamedKey::ArrowRight) if modifiers.alt_key() => Some(KeyInput::GoForward),
+        Key::Named(NamedKey::F5) => Some(KeyInput::Reload),
+        Key::Character(text) if modifiers.control_key() && text.eq_ignore_ascii_case("r") => {
+            Some(KeyInput::Reload)
+        }
         Key::Named(NamedKey::ArrowUp) => Some(KeyInput::ArrowUp),
         Key::Named(NamedKey::ArrowDown) => Some(KeyInput::ArrowDown),
         Key::Named(NamedKey::PageUp) => Some(KeyInput::PageUp),

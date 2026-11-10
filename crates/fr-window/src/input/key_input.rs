@@ -7,4 +7,7 @@ pub enum KeyInput {
     Home,
     End,
     Space,
+    GoBack,
+    GoForward,
+    Reload,
 }

@@ -611,6 +611,13 @@ name = "fr-geom"
 version = "0.0.1"
 
 [[package]]
+name = "fr-history"
+version = "0.0.1"
+dependencies = [
+ "url",
+]
+
+[[package]]
 name = "fr-html"
 version = "0.0.1"
 dependencies = [
@@ -693,6 +700,7 @@ dependencies = [
  "fr-css",
  "fr-dom",
  "fr-geom",
+ "fr-history",
  "fr-image",
  "fr-layout",
  "fr-page",
@@ -701,6 +709,7 @@ dependencies = [
  "fr-text",
  "fr-ui",
  "fr-window",
+ "url",
 ]
 
 [[package]]

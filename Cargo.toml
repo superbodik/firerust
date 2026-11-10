@@ -23,6 +23,7 @@ fr-css = { version = "0.0.1", path = "crates/fr-css" }
 fr-dom = { version = "0.0.1", path = "crates/fr-dom" }
 fr-geom = { version = "0.0.1", path = "crates/fr-geom" }
 fr-html = { version = "0.0.1", path = "crates/fr-html" }
+fr-history = { version = "0.0.1", path = "crates/fr-history" }
 fr-image = { version = "0.0.1", path = "crates/fr-image" }
 fr-layout = { version = "0.0.1", path = "crates/fr-layout" }
 fr-net = { version = "0.0.1", path = "crates/fr-net" }

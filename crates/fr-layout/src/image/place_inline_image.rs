@@ -7,6 +7,7 @@ use crate::flow::flow_state::FlowState;
 use crate::image::layout_replaced::layout_replaced;
 use crate::inline::alignment_of::alignment_of;
 use crate::inline::flush_inline::flush_inline;
+use crate::inline::link_of::link_of;
 
 pub fn place_inline_image(
     context: &mut LayoutContext<'_>,
@@ -22,7 +23,8 @@ pub fn place_inline_image(
             .and_then(|node| node.kind().as_element())
             .and_then(|element| element.attribute("alt"))
             .unwrap_or_default();
-        state.inline.push_text(alt, style);
+        let link = link_of(context.document(), id);
+        state.inline.push_text(alt, style, link);
         return;
     }
     flush_inline(context, state, container);

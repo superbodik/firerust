@@ -28,7 +28,7 @@ pub fn accumulate_widths(
             .parent()
             .and_then(|parent| styles.get(parent))
             .unwrap_or(container);
-        buffer.push_text(text, style);
+        buffer.push_text(text, style, None);
         return;
     }
     let Some(style) = styles.get(id) else {

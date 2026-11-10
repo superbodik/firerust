@@ -5,13 +5,16 @@ use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
-use winit::window::{Window, WindowId};
+use winit::keyboard::ModifiersState;
+use winit::window::{CursorIcon, Window, WindowId};
 
 use crate::app::window_config::WindowConfig;
 use crate::input::input_event::InputEvent;
+use crate::input::key_input::KeyInput;
 use crate::input::translate_key::translate_key;
 use crate::input::translate_wheel::translate_wheel;
 use crate::present::softbuffer_presenter::SoftbufferPresenter;
+use crate::scene::pointer_kind::PointerKind;
 use crate::scene::render_scene::RenderScene;
 use crate::scene::scene_reaction::SceneReaction;
 
@@ -21,23 +24,39 @@ pub struct AppHandler<S: RenderScene> {
     window: Option<Arc<Window>>,
     presenter: Option<SoftbufferPresenter>,
     cursor: (f32, f32),
+    modifiers: ModifiersState,
+    shown_title: String,
 }
 
 impl<S: RenderScene> AppHandler<S> {
     pub fn new(config: WindowConfig, scene: S) -> Self {
         Self {
+            shown_title: config.title.clone(),
             config,
             scene,
             window: None,
             presenter: None,
             cursor: (0.0, 0.0),
+            modifiers: ModifiersState::empty(),
         }
     }
 
     fn dispatch(&mut self, event: InputEvent) {
-        if self.scene.handle(event) == SceneReaction::Redraw
-            && let Some(window) = self.window.as_ref()
+        let reaction = self.scene.handle(event);
+        let Some(window) = self.window.as_ref() else {
+            return;
+        };
+        if let Some(title) = self.scene.title()
+            && title != self.shown_title
         {
+            window.set_title(&title);
+            self.shown_title = title;
+        }
+        window.set_cursor(match self.scene.pointer() {
+            PointerKind::Arrow => CursorIcon::Default,
+            PointerKind::Hand => CursorIcon::Pointer,
+        });
+        if reaction == SceneReaction::Redraw {
             window.request_redraw();
         }
     }
@@ -107,14 +126,27 @@ impl<S: RenderScene> ApplicationHandler for AppHandler<S> {
             }),
             WindowEvent::KeyboardInput { event, .. } => {
                 if event.state == ElementState::Pressed
-                    && let Some(key) = translate_key(&event.logical_key)
+                    && let Some(key) = translate_key(&event.logical_key, self.modifiers)
                 {
                     self.dispatch(InputEvent::Key(key));
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
                 self.cursor = (position.x as f32, position.y as f32);
+                let (x, y) = self.cursor;
+                self.dispatch(InputEvent::PointerMoved { x, y });
             }
+            WindowEvent::ModifiersChanged(modifiers) => self.modifiers = modifiers.state(),
+            WindowEvent::MouseInput {
+                state: ElementState::Released,
+                button: MouseButton::Back,
+                ..
+            } => self.dispatch(InputEvent::Key(KeyInput::GoBack)),
+            WindowEvent::MouseInput {
+                state: ElementState::Released,
+                button: MouseButton::Forward,
+                ..
+            } => self.dispatch(InputEvent::Key(KeyInput::GoForward)),
             WindowEvent::MouseInput {
                 state: ElementState::Released,
                 button: MouseButton::Left,

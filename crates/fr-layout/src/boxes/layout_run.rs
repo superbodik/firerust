@@ -1,6 +1,7 @@
 use fr_css::cascade::computed_style::ComputedStyle;
 use fr_css::value::font_family::FontFamily;
 use fr_css::value::font_style::FontStyle;
+use fr_dom::node::node_id::NodeId;
 use fr_geom::color::rgba::Rgba;
 use fr_text::render::text_family::TextFamily;
 use fr_text::render::text_run::TextRun;
@@ -14,6 +15,7 @@ pub struct LayoutRun {
     pub font_weight: u16,
     pub is_italic: bool,
     pub family: TextFamily,
+    pub link: Option<NodeId>,
 }
 
 impl LayoutRun {
@@ -30,7 +32,13 @@ impl LayoutRun {
                 FontFamily::Serif => TextFamily::Serif,
                 FontFamily::Monospace => TextFamily::Monospace,
             },
+            link: None,
         }
+    }
+
+    pub fn with_link(mut self, link: Option<NodeId>) -> Self {
+        self.link = link;
+        self
     }
 
     pub fn has_same_style(&self, other: &Self) -> bool {
@@ -40,6 +48,7 @@ impl LayoutRun {
             && self.font_weight == other.font_weight
             && self.is_italic == other.is_italic
             && self.family == other.family
+            && self.link == other.link
     }
 
     pub fn as_text_run(&self) -> TextRun<'_> {
