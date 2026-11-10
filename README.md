@@ -36,9 +36,14 @@ The goal is simple: open simple and medium-complexity sites while using noticeab
 - Flexbox (via [taffy](https://github.com/DioxusLabs/taffy))
 - Tables with content-based column widths and `colspan`
 - Re-layout when the window is resized
+- Navigation: address bar, back / forward / reload buttons, clickable links, history that remembers the scroll position
+- Scrolling with the wheel, arrow keys, Page Up / Page Down, Space, Home and End, with a scrollbar thumb
+- A readable error page when a page cannot be opened
 - Deeply nested documents are safe: layout runs on a large stack and the tree is freed iteratively
 
 Pages that load and lay out: Hacker News, example.com, CERN, NPR, Lobsters.
+
+Keys: `Ctrl+L` or `F6` focus the address bar, `Enter` opens, `Esc` cancels, `Alt+Left` and `Alt+Right` go back and forward, `F5` or `Ctrl+R` reloads.
 
 ## Quick start
 
@@ -50,13 +55,19 @@ cd firerust
 cargo run -p fr-shell -- tests/pages/blog.html
 ```
 
+A small linked site for trying navigation:
+
+```
+cargo run -p fr-shell -- tests/pages/site/index.html
+```
+
 An address works too:
 
 ```
 cargo run -p fr-shell -- https://example.com
 ```
 
-Bundled test pages live in [tests/pages](tests/pages): `plain`, `nested`, `entities`, `cyrillic`, `blog`, `images`, `columns`, `tables`.
+Bundled test pages live in [tests/pages](tests/pages): `plain`, `nested`, `entities`, `cyrillic`, `blog`, `images`, `columns`, `tables` and the linked `site/`.
 
 ## Architecture
 
@@ -64,7 +75,9 @@ Every crate has one responsibility. Every file holds one type or one function.
 
 ```
 fr-shell ─ binary: entry point and scenes
- ├─ fr-window   window (winit) and frame output (softbuffer)
+ ├─ fr-window   window (winit), input events, frame output (softbuffer)
+ ├─ fr-ui       scroll state, address field, toolbar geometry (no window needed)
+ ├─ fr-history  back / forward stack with scroll positions
  ├─ fr-page     address → load → parse → styles → images
  │   ├─ fr-net     address resolution, file / http / https loading
  │   ├─ fr-html    HTML → DOM (html5ever)
@@ -93,7 +106,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-About 255 tests pass. One network test is run manually:
+About 330 tests pass. One network test is run manually:
 
 ```
 cargo test -p fr-page --test real_sites -- --ignored
@@ -110,15 +123,17 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 | 2 | Loading and DOM | done |
 | 3 | CSS and cascade | done |
 | 4 | Layout | done |
-| 5 | Navigation and UI: address bar, back / forward, link clicks, scrolling, zoom | next |
-| 6 | Tabs and memory | planned |
+| 5 | Navigation and UI: address bar, back / forward, link clicks, scrolling | done |
+| 6 | Tabs and memory | next |
 | 7 | JavaScript | planned |
 | 8 | Network and forms | planned |
 | 9 | Security and polish | planned |
 
 ## Known limitations
 
-- No scrolling, link clicks or address bar yet (stage 5)
+- Loading blocks the window while a page is fetched
+- No page zoom yet; links to `#fragment` do not scroll to the anchor
+- Back and forward reload the page, there is no page cache yet
 - Inline images become their own blocks; margins, padding and borders on inline elements are ignored; no underline
 - No `float` or `position`
 - Tables have no `valign` or `border-spacing`
