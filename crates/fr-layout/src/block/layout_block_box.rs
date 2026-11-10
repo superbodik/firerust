@@ -1,3 +1,4 @@
+use fr_css::value::display::Display;
 use fr_dom::node::node_id::NodeId;
 use fr_geom::geometry::rect::Rect;
 use fr_text::render::text_alignment::TextAlignment;
@@ -8,6 +9,7 @@ use crate::block::layout_normal_block::layout_normal_block;
 use crate::boxes::box_kind::BoxKind;
 use crate::boxes::layout_box::LayoutBox;
 use crate::context::layout_context::LayoutContext;
+use crate::flex::layout_flex_box::layout_flex_box;
 use crate::image::is_replaced::is_replaced;
 use crate::image::layout_replaced::layout_replaced;
 
@@ -22,6 +24,9 @@ pub fn layout_block_box(
     };
     if is_replaced(context.document(), node) {
         return layout_replaced(context, node, style, spec, TextAlignment::Left);
+    }
+    if style.display == Display::Flex {
+        return layout_flex_box(context, node, style, spec);
     }
     layout_normal_block(context, node, style, spec)
 }

@@ -10,6 +10,7 @@ fr-dom.workspace = true
 fr-geom.workspace = true
 fr-image.workspace = true
 fr-text.workspace = true
+taffy.workspace = true
 
 [dev-dependencies]
 fr-html.workspace = true

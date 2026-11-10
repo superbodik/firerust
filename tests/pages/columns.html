@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Columns</title>
+<style>
+body { background-color: #f4f1ea; }
+.layout { display: flex; gap: 16px; margin: 12px 0; }
+.card { flex: 1; background-color: #ffffff; border: 2px solid #b7410e; padding: 10px; }
+.card.wide { flex: 2; }
+.nav { display: flex; justify-content: space-between; align-items: center; background-color: #b7410e; color: #ffffff; padding: 8px 16px; }
+.nav .brand { font-size: 22px; font-weight: bold; }
+.nav .links { display: flex; gap: 12px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { background-color: #0b5394; color: #ffffff; padding: 3px 10px; }
+.stack { display: flex; flex-direction: column; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="nav"><div class="brand">firerust</div><div class="links"><div>Home</div><div>Docs</div><div>About</div></div></div>
+<div class="layout">
+<div class="card"><h3>One</h3><p>Equal share of the row.</p></div>
+<div class="card wide"><h3>Two</h3><p>This card grows twice as much as its neighbours, so its text has more room before it wraps onto a new line.</p></div>
+<div class="card"><h3>Three</h3><p>Equal share again.</p></div>
+</div>
+<div class="tags"><div class="tag">rust</div><div class="tag">browser</div><div class="tag">layout</div><div class="tag">flexbox</div><div class="tag">taffy</div></div>
+<div class="stack"><div class="tag">first</div><div class="tag">second</div></div>
+</body>
+</html>

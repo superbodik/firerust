@@ -11,7 +11,7 @@ pub fn measure_runs(engine: &mut TextEngine, runs: &[TextRun<'_>]) -> ContentWid
     let widest = shape_runs(engine, runs, UNBOUNDED_WIDTH, TextAlignment::Left).width();
     let narrowest = shape_runs(engine, runs, NARROWEST_WIDTH, TextAlignment::Left).width();
     ContentWidths {
-        min: narrowest.min(widest),
-        max: widest,
+        min: narrowest.min(widest).ceil(),
+        max: widest.ceil(),
     }
 }

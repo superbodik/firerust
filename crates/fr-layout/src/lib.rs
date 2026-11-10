@@ -1,9 +1,11 @@
 pub mod block;
 pub mod boxes;
 pub mod context;
+pub mod flex;
 pub mod flow;
 pub mod hit_test;
 pub mod image;
 pub mod inline;
+pub mod intrinsic;
 pub mod metrics;
 pub mod page;
