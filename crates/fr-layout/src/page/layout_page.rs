@@ -8,6 +8,7 @@ use fr_text::engine::text_engine::TextEngine;
 use crate::boxes::box_kind::BoxKind;
 use crate::boxes::layout_box::LayoutBox;
 use crate::context::layout_context::LayoutContext;
+use crate::control::control_focus::ControlFocus;
 use crate::flow::layout_flow::layout_flow;
 use crate::metrics::content_area::ContentArea;
 use crate::page::canvas_background::canvas_background;
@@ -21,9 +22,21 @@ pub fn layout_page(
     text: &mut TextEngine,
     viewport_width: f32,
 ) -> LayoutTree {
+    layout_page_with_focus(document, styles, images, text, viewport_width, None)
+}
+
+pub fn layout_page_with_focus(
+    document: &Document,
+    styles: &StyleMap,
+    images: &ImageStore,
+    text: &mut TextEngine,
+    viewport_width: f32,
+    focus: Option<ControlFocus>,
+) -> LayoutTree {
     let width = viewport_width.max(1.0);
     run_with_large_stack(|| {
-        let mut context = LayoutContext::new(document, styles, images, &mut *text);
+        let mut context =
+            LayoutContext::new(document, styles, images, &mut *text).with_focus(focus);
         let flow = layout_flow(
             &mut context,
             document.root(),

@@ -4,6 +4,8 @@ use fr_dom::node::node_id::NodeId;
 use fr_dom::query::element_name::element_name;
 
 use crate::context::layout_context::LayoutContext;
+use crate::control::control_kind_of::control_kind_of;
+use crate::control::place_control::place_control;
 use crate::flow::flow_state::FlowState;
 use crate::flow::place_block::place_block;
 use crate::image::place_inline_image::place_inline_image;
@@ -33,11 +35,34 @@ pub fn handle_node(
     };
     match style.display {
         Display::None => {}
+        _ if is_form_field(context, id) => {
+            place_form_field(context, state, id, style, container);
+        }
         Display::Inline => handle_inline(context, state, id, style, container),
         _ => {
             flush_inline(context, state, container);
             place_block(context, state, id);
         }
+    }
+}
+
+fn is_form_field(context: &LayoutContext<'_>, id: NodeId) -> bool {
+    let document = context.document();
+    matches!(
+        element_name(document, id),
+        Some("input" | "textarea" | "select")
+    )
+}
+
+fn place_form_field(
+    context: &mut LayoutContext<'_>,
+    state: &mut FlowState,
+    id: NodeId,
+    style: &ComputedStyle,
+    container: &ComputedStyle,
+) {
+    if let Some(kind) = control_kind_of(context.document(), id) {
+        place_control(context, state, id, kind, style, container);
     }
 }
 
@@ -52,6 +77,11 @@ fn handle_inline(
     match element_name(document, id) {
         Some("br") => state.inline.push_break(style),
         Some("img") => place_inline_image(context, state, id, style, container),
+        Some("button") => {
+            if let Some(kind) = control_kind_of(document, id) {
+                place_control(context, state, id, kind, style, container);
+            }
+        }
         _ => {
             for child in document.children(id) {
                 handle_node(context, state, child, container);

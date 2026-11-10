@@ -3,11 +3,14 @@ use fr_dom::tree::document::Document;
 use fr_image::store::image_store::ImageStore;
 use fr_text::engine::text_engine::TextEngine;
 
+use crate::control::control_focus::ControlFocus;
+
 pub struct LayoutContext<'a> {
     pub document: &'a Document,
     pub styles: &'a StyleMap,
     pub images: &'a ImageStore,
     pub text: &'a mut TextEngine,
+    pub focus: Option<ControlFocus>,
 }
 
 impl<'a> LayoutContext<'a> {
@@ -22,7 +25,13 @@ impl<'a> LayoutContext<'a> {
             styles,
             images,
             text,
+            focus: None,
         }
+    }
+
+    pub fn with_focus(mut self, focus: Option<ControlFocus>) -> Self {
+        self.focus = focus;
+        self
     }
 
     pub fn document(&self) -> &'a Document {

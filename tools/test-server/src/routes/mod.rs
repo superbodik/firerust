@@ -1,0 +1,16 @@
+pub mod account_page;
+pub mod brotli_page;
+pub mod cp1251_page;
+pub mod decode_percent;
+pub mod echo_page;
+pub mod gzip_page;
+pub mod login_page;
+pub mod login_submit;
+pub mod meta_cp1251_page;
+pub mod not_found;
+pub mod parse_form;
+pub mod plain_page;
+pub mod route;
+pub mod search_page;
+pub mod set_cookie_page;
+pub mod show_cookie_page;

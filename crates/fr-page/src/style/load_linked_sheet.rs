@@ -2,6 +2,7 @@ use fr_css::parse::parse_stylesheet::parse_stylesheet;
 use fr_css::parse::stylesheet::Stylesheet;
 use fr_dom::node::node_id::NodeId;
 use fr_dom::tree::document::Document;
+use fr_net::body::decode_text::decode_text;
 use fr_net::load::load_url::load_url;
 use url::Url;
 
@@ -19,5 +20,6 @@ pub fn load_linked_sheet(document: &Document, id: NodeId, base: &Url) -> Option<
     }
     let url = base.join(data.attribute("href")?).ok()?;
     let response = load_url(&url).ok()?;
-    Some(parse_stylesheet(&String::from_utf8_lossy(&response.body)))
+    let text = decode_text(&response.body, response.content_type.as_deref());
+    Some(parse_stylesheet(&text))
 }

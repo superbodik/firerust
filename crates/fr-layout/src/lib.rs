@@ -1,6 +1,7 @@
 pub mod block;
 pub mod boxes;
 pub mod context;
+pub mod control;
 pub mod flex;
 pub mod flow;
 pub mod hit_test;

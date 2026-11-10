@@ -5,6 +5,8 @@ use fr_dom::query::element_name::element_name;
 use fr_text::render::content_widths::ContentWidths;
 
 use crate::context::layout_context::LayoutContext;
+use crate::control::control_kind_of::control_kind_of;
+use crate::control::control_widths::control_widths;
 use crate::inline::inline_buffer::InlineBuffer;
 use crate::intrinsic::flush_widths::flush_widths;
 use crate::intrinsic::image_widths::image_widths;
@@ -41,6 +43,12 @@ pub fn accumulate_widths(
             Some("img") => {
                 flush_widths(context, buffer, widths);
                 widen(widths, image_widths(context, id, style));
+            }
+            Some("input" | "textarea" | "select" | "button") => {
+                flush_widths(context, buffer, widths);
+                if let Some(kind) = control_kind_of(document, id) {
+                    widen(widths, control_widths(context, id, kind, style));
+                }
             }
             _ => {
                 for child in document.children(id) {

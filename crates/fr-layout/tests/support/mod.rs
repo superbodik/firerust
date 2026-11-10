@@ -69,3 +69,23 @@ pub fn layout_document(document: Document, css: &str, images: &ImageStore, width
     let tree = layout_page(&document, &styles, images, &mut engine, width);
     Laid { document, tree }
 }
+
+pub fn layout_focused(html: &str, css: &str, width: f32, focused: &str, caret: usize) -> Laid {
+    use fr_layout::control::control_focus::ControlFocus;
+    use fr_layout::page::layout_page::layout_page_with_focus;
+
+    let document = parse_html(html);
+    let author = [parse_stylesheet(css)];
+    let styles = compute_styles(&document, &user_agent_sheet(), &author);
+    let mut engine = TextEngine::new();
+    let node = find_by_id(&document, focused);
+    let tree = layout_page_with_focus(
+        &document,
+        &styles,
+        &ImageStore::new(),
+        &mut engine,
+        width,
+        Some(ControlFocus { node, caret }),
+    );
+    Laid { document, tree }
+}
