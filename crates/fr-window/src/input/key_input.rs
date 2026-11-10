@@ -22,4 +22,6 @@ pub enum KeyInput {
     NextTab,
     PreviousTab,
     ToggleMemoryPanel,
+    FocusNext,
+    FocusPrevious,
 }

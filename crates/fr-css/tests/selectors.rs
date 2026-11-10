@@ -107,8 +107,8 @@ fn specificity_counts_ids_classes_and_tags() {
 
 #[test]
 fn unsupported_or_broken_selectors_give_nothing() {
+    assert!(parse_selector_list("a::before").is_empty());
     assert!(parse_selector_list("a:hover").is_empty());
-    assert!(parse_selector_list("a[href]").is_empty());
     assert!(parse_selector_list("> p").is_empty());
     assert!(parse_selector_list("p >").is_empty());
     assert!(parse_selector_list(".").is_empty());

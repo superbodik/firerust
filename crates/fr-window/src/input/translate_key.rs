@@ -21,6 +21,8 @@ pub fn translate_key(
             Some(KeyInput::PreviousTab)
         }
         Key::Named(NamedKey::Tab) if modifiers.control_key() => Some(KeyInput::NextTab),
+        Key::Named(NamedKey::Tab) if modifiers.shift_key() => Some(KeyInput::FocusPrevious),
+        Key::Named(NamedKey::Tab) => Some(KeyInput::FocusNext),
         Key::Named(NamedKey::ArrowLeft) => Some(KeyInput::ArrowLeft),
         Key::Named(NamedKey::ArrowRight) => Some(KeyInput::ArrowRight),
         Key::Named(NamedKey::ArrowUp) => Some(KeyInput::ArrowUp),

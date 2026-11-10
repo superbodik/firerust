@@ -1150,6 +1150,7 @@ name = "fr-shell"
 version = "0.0.1"
 dependencies = [
  "fr-dom",
+ "fr-form",
  "fr-geom",
  "fr-js",
  "fr-layout",

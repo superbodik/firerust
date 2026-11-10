@@ -1,6 +1,7 @@
 use fr_dom::node::node_id::NodeId;
 use fr_dom::tree::document::Document;
 
+use crate::select::attribute_matches::attribute_matches;
 use crate::select::compound::Compound;
 
 pub fn matches_compound(document: &Document, element: NodeId, compound: &Compound) -> bool {
@@ -24,6 +25,10 @@ pub fn matches_compound(document: &Document, element: NodeId, compound: &Compoun
         .classes
         .iter()
         .all(|class| has_class(data.attribute("class"), class))
+        && compound
+            .attributes
+            .iter()
+            .all(|condition| attribute_matches(condition, data.attribute(&condition.name)))
 }
 
 fn has_class(attribute: Option<&str>, class: &str) -> bool {

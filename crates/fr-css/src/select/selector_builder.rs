@@ -1,5 +1,6 @@
 use cssparser::Token;
 
+use crate::select::attribute_condition::AttributeCondition;
 use crate::select::combinator::Combinator;
 use crate::select::compound::Compound;
 use crate::select::selector::Selector;
@@ -55,6 +56,15 @@ impl SelectorBuilder {
             }
             _ => self.is_valid = false,
         }
+    }
+
+    pub fn accept_attribute(&mut self, condition: AttributeCondition) {
+        self.compound.attributes.push(condition);
+        self.touch();
+    }
+
+    pub fn invalidate(&mut self) {
+        self.is_valid = false;
     }
 
     pub fn finish(&mut self) -> Option<Selector> {

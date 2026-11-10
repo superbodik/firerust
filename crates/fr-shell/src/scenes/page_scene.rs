@@ -1,10 +1,13 @@
 use std::time::Duration;
 
+use fr_dom::node::node_id::NodeId;
 use fr_geom::color::rgba::Rgba;
 use fr_geom::geometry::point::Point;
 use fr_geom::geometry::rect::Rect;
-use fr_layout::page::layout_page::layout_page;
+use fr_layout::control::control_kind::ControlKind;
+use fr_layout::page::layout_page::layout_page_with_focus;
 use fr_mem::meter::memory_meter::MemoryMeter;
+use fr_net::load::request::Request;
 use fr_page::images::shared_image_cache::shared_image_bytes;
 use fr_page::load::blank_page::blank_page;
 use fr_page::load::page::Page;
@@ -36,9 +39,19 @@ use fr_window::scene::scene_reaction::SceneReaction;
 use url::Url;
 
 use crate::scenes::address_text::address_text;
+use crate::scenes::click_control::click_control;
+use crate::scenes::control_action::ControlAction;
+use crate::scenes::control_at::control_at;
+use crate::scenes::control_kind_in::control_kind_in;
+use crate::scenes::dispatch_event_to::dispatch_event_to;
 use crate::scenes::dispatch_page_click::dispatch_page_click;
-use crate::scenes::fetch_page::fetch_page;
+use crate::scenes::fetch_page::{fetch_page, fetch_request};
+use crate::scenes::focus_key::FocusKey;
+use crate::scenes::form_focus::FormFocus;
+use crate::scenes::form_for::form_for;
+use crate::scenes::form_request::form_request;
 use crate::scenes::link_target::link_target;
+use crate::scenes::neighbour_in::neighbour_in;
 use crate::scenes::refresh_active::refresh_active;
 use crate::scenes::run_due_timers::run_due_timers;
 use crate::scenes::timer_delay::timer_delay;
@@ -62,6 +75,7 @@ pub struct PageScene {
     is_over_link: bool,
     meter: MemoryMeter,
     shows_memory: bool,
+    form: FormFocus,
 }
 
 impl PageScene {
@@ -79,6 +93,7 @@ impl PageScene {
             is_over_link: false,
             meter: MemoryMeter::new(),
             shows_memory: false,
+            form: FormFocus::new(),
         }
     }
 
@@ -112,6 +127,7 @@ impl PageScene {
         self.scroll = ScrollState::new();
         self.pending_scroll = Some(scroll);
         self.is_over_link = false;
+        self.form.forget();
     }
 
     fn switch_to(&mut self, index: usize) -> SceneReaction {
@@ -144,9 +160,20 @@ impl PageScene {
     }
 
     fn open(&mut self, input: &str) -> SceneReaction {
-        let Some(page) = fetch_page(input) else {
-            return SceneReaction::Redraw;
-        };
+        match fetch_page(input) {
+            Some(page) => self.navigate(page),
+            None => SceneReaction::Redraw,
+        }
+    }
+
+    fn open_request(&mut self, request: &Request) -> SceneReaction {
+        match fetch_request(request) {
+            Some(page) => self.navigate(page),
+            None => SceneReaction::Redraw,
+        }
+    }
+
+    fn navigate(&mut self, page: Page) -> SceneReaction {
         let offset = self.scroll.offset();
         let tab = self.tabs.active_mut();
         tab.history_mut().remember_scroll(offset);
@@ -231,13 +258,26 @@ impl PageScene {
         self.address.blur();
         let link = self.target_at(x, y);
         let page_point = Point::new(x, y - CHROME_HEIGHT + self.scroll.offset());
+        let control = control_at(&mut self.tabs, &mut self.text_engine, page_point);
         let allowed =
             dispatch_page_click(&mut self.tabs, &mut self.text_engine, page_point, (x, y));
         let changed = refresh_active(&mut self.tabs);
-        match link {
-            Some(url) if allowed => self.open(url.as_str()),
-            _ if changed || was_focused => SceneReaction::Redraw,
-            _ => SceneReaction::Idle,
+        let blurred = control != self.form.control() && self.form.blur(&mut self.tabs);
+        if allowed {
+            if let Some(control) = control {
+                let action = click_control(&mut self.tabs, control);
+                let reaction = self.apply_control_action(action);
+                refresh_active(&mut self.tabs);
+                return reaction;
+            }
+            if let Some(url) = link {
+                return self.open(url.as_str());
+            }
+        }
+        if changed || was_focused || blurred {
+            SceneReaction::Redraw
+        } else {
+            SceneReaction::Idle
         }
     }
 
@@ -259,9 +299,26 @@ impl PageScene {
                 AddressOutcome::Ignored => {}
             }
         }
+        match self.form.press(&mut self.tabs, key) {
+            FocusKey::Edited => {
+                refresh_active(&mut self.tabs);
+                return SceneReaction::Redraw;
+            }
+            FocusKey::SubmitFrom(control) => return self.submit_from(control),
+            FocusKey::Activate(control) => {
+                let action = click_control(&mut self.tabs, control);
+                let reaction = self.apply_control_action(action);
+                refresh_active(&mut self.tabs);
+                return reaction;
+            }
+            FocusKey::Blurred => return SceneReaction::Redraw,
+            FocusKey::Ignored => {}
+        }
         let count = self.tabs.len();
         let active = self.tabs.active_index();
         match key {
+            KeyInput::FocusNext => self.move_focus(true),
+            KeyInput::FocusPrevious => self.move_focus(false),
             KeyInput::GoBack => self.travel(false),
             KeyInput::GoForward => self.travel(true),
             KeyInput::Reload => self.reload(),
@@ -281,6 +338,65 @@ impl PageScene {
         }
     }
 
+    fn apply_control_action(&mut self, action: ControlAction) -> SceneReaction {
+        match action {
+            ControlAction::Focus(control) => {
+                self.form.focus(&mut self.tabs, control);
+                SceneReaction::Redraw
+            }
+            ControlAction::Changed(control) => {
+                dispatch_event_to(&mut self.tabs, control, "input");
+                dispatch_event_to(&mut self.tabs, control, "change");
+                self.form.focus(&mut self.tabs, control);
+                SceneReaction::Redraw
+            }
+            ControlAction::Submit { form, submitter } => self.submit_form(form, Some(submitter)),
+            ControlAction::Nothing => SceneReaction::Idle,
+        }
+    }
+
+    fn submit_from(&mut self, control: NodeId) -> SceneReaction {
+        match form_for(&mut self.tabs, control) {
+            Some(form) => self.submit_form(form, None),
+            None => SceneReaction::Idle,
+        }
+    }
+
+    fn submit_form(&mut self, form: NodeId, submitter: Option<NodeId>) -> SceneReaction {
+        let allowed = dispatch_event_to(&mut self.tabs, form, "submit");
+        refresh_active(&mut self.tabs);
+        if !allowed {
+            return SceneReaction::Redraw;
+        }
+        match form_request(&mut self.tabs, form, submitter) {
+            Some(request) => self.open_request(&request),
+            None => SceneReaction::Idle,
+        }
+    }
+
+    fn move_focus(&mut self, forward: bool) -> SceneReaction {
+        let current = self.form.control();
+        let Some(next) = neighbour_in(&mut self.tabs, current, forward) else {
+            return SceneReaction::Idle;
+        };
+        self.form.focus(&mut self.tabs, next);
+        SceneReaction::Redraw
+    }
+
+    fn is_over_clickable_control(&mut self, x: f32, y: f32) -> bool {
+        if y < CHROME_HEIGHT {
+            return false;
+        }
+        let page_point = Point::new(x, y - CHROME_HEIGHT + self.scroll.offset());
+        let Some(control) = control_at(&mut self.tabs, &mut self.text_engine, page_point) else {
+            return false;
+        };
+        !matches!(
+            control_kind_in(&mut self.tabs, control),
+            Some(ControlKind::Text | ControlKind::Password | ControlKind::TextArea) | None
+        )
+    }
+
     fn scroll_for(&mut self, event: InputEvent) -> SceneReaction {
         let Some(metrics) = self.metrics() else {
             return SceneReaction::Idle;
@@ -298,6 +414,7 @@ impl PageScene {
     }
 
     fn layout_for(&mut self, width: u32) {
+        let focus = self.form.layout_focus();
         let Some(content) = self.tabs.active_mut().content_mut() else {
             return;
         };
@@ -308,12 +425,13 @@ impl PageScene {
         if is_current {
             return;
         }
-        let tree = layout_page(
+        let tree = layout_page_with_focus(
             &content.document.borrow(),
             &content.styles,
             &content.images,
             &mut self.text_engine,
             width as f32,
+            focus,
         );
         content.layout = Some(LayoutCache {
             width,
@@ -376,14 +494,22 @@ impl RenderScene for PageScene {
         match event {
             InputEvent::Click { x, y } => self.click(x, y),
             InputEvent::PointerMoved { x, y } => {
-                self.is_over_link = self.target_at(x, y).is_some();
+                self.is_over_link =
+                    self.target_at(x, y).is_some() || self.is_over_clickable_control(x, y);
                 SceneReaction::Idle
             }
             InputEvent::Character(character) if self.address.is_focused() => {
                 self.address.insert(character);
                 SceneReaction::Redraw
             }
-            InputEvent::Character(_) => SceneReaction::Idle,
+            InputEvent::Character(character) => {
+                if self.form.type_char(&mut self.tabs, character) {
+                    refresh_active(&mut self.tabs);
+                    SceneReaction::Redraw
+                } else {
+                    SceneReaction::Idle
+                }
+            }
             InputEvent::Key(key) => self.press(key),
             InputEvent::Wheel { .. } => self.scroll_for(event),
         }

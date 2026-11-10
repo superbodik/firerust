@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Forms</title>
+<style>
+body { font-family: sans-serif; background-color: #f4f1ea; }
+h1 { color: #b7410e; }
+label { display: block; margin-top: 10px; }
+#note { margin-top: 12px; color: #0b5fa5; }
+</style>
+</head>
+<body>
+<h1>Forms</h1>
+<form id="f" action="http://127.0.0.1:8080/echo" method="post">
+<label>Name</label>
+<input type="text" name="name" placeholder="Your name">
+<label>Message</label>
+<textarea name="message" rows="3">Hello</textarea>
+<label>Colour</label>
+<select name="colour">
+<option value="red">Red</option>
+<option value="green">Green</option>
+<option value="blue">Blue</option>
+</select>
+<label>Newsletter</label>
+<input type="checkbox" name="news" value="yes">
+<label>Size</label>
+<input type="radio" name="size" value="small" checked>
+<input type="radio" name="size" value="large">
+<br>
+<input type="submit" name="go" value="Send it">
+</form>
+<p id="note">Nothing typed yet.</p>
+<script>
+document.querySelector('input[name=name]').addEventListener('input', function (e) {
+  document.getElementById('note').textContent = 'Typing: ' + e.target.value;
+});
+document.getElementById('f').addEventListener('submit', function () {
+  console.log('submitting');
+});
+</script>
+</body>
+</html>
