@@ -3,7 +3,7 @@ use fr_page::load::page::Page;
 use crate::model::tab::Tab;
 use crate::model::tab_id::TabId;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TabSet {
     tabs: Vec<Tab>,
     active: usize,

@@ -8,7 +8,12 @@ use support::{Laid, layout};
 fn link_for(page: &Laid, paragraph: &str, dx: f32) -> Option<fr_dom::node::node_id::NodeId> {
     let rect = page.boxed(paragraph).border_box;
     let point = Point::new(rect.origin.x + dx, rect.origin.y + 8.0);
-    link_at(&page.tree.root, &mut TextEngine::new(), point)
+    link_at(
+        &page.tree.root,
+        &mut TextEngine::new(),
+        &page.document,
+        point,
+    )
 }
 
 #[test]
@@ -80,7 +85,12 @@ fn a_link_on_the_second_line_is_found() {
     let rect = page.boxed("p").border_box;
     let point = Point::new(rect.origin.x + 30.0, rect.origin.y + 24.0);
     assert_eq!(
-        link_at(&page.tree.root, &mut TextEngine::new(), point),
+        link_at(
+            &page.tree.root,
+            &mut TextEngine::new(),
+            &page.document,
+            point
+        ),
         Some(page.id("l"))
     );
 }

@@ -87,11 +87,11 @@ fn the_blog_header_is_a_real_padded_box_with_a_background() {
     let page = load_page("blog.html", &pages_dir()).expect("page");
 
     let tree = layout_of(&page, 800.0);
-    let header = box_of_first(&tree, &page.document, "header").expect("header box");
+    let header = box_of_first(&tree, &page.document.borrow(), "header").expect("header box");
     assert_eq!(header.background, Rgba::opaque(0xb7, 0x41, 0x0e));
     assert_eq!(header.border_box.origin.x, 8.0);
     assert_eq!(header.border_box.size.width, 784.0);
-    let heading = box_of_first(&tree, &page.document, "h1").expect("h1 box");
+    let heading = box_of_first(&tree, &page.document.borrow(), "h1").expect("h1 box");
     assert_eq!(heading.border_box.origin.x, 24.0);
 }
 
@@ -108,12 +108,12 @@ fn the_same_image_address_is_decoded_once() {
 
     let page = load_page("images.html", &pages_dir()).expect("page");
 
-    let gradients: Vec<_> = page
-        .document
-        .walk(page.document.root())
+    let document = page.document.borrow();
+    let gradients: Vec<_> = document
+        .walk(document.root())
         .filter_map(|edge| match edge {
             Edge::Enter(id) => {
-                let element = page.document.node(id)?.kind().as_element()?;
+                let element = document.node(id)?.kind().as_element()?;
                 (element.attribute("src") == Some("gradient.png")).then_some(id)
             }
             Edge::Leave(_) => None,
@@ -130,7 +130,7 @@ fn a_page_with_images_lays_out_with_their_sizes() {
     let page = load_page("images.html", &pages_dir()).expect("page");
 
     let tree = layout_of(&page, 800.0);
-    let first_image = box_of_first(&tree, &page.document, "img").expect("img box");
+    let first_image = box_of_first(&tree, &page.document.borrow(), "img").expect("img box");
     assert_eq!(first_image.border_box.size.width, 240.0);
     assert_eq!(first_image.border_box.size.height, 120.0);
 }

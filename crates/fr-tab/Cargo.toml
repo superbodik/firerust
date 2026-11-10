@@ -10,6 +10,7 @@ fr-dom.workspace = true
 fr-geom.workspace = true
 fr-history.workspace = true
 fr-image.workspace = true
+fr-js.workspace = true
 fr-layout.workspace = true
 fr-mem.workspace = true
 fr-page.workspace = true

@@ -12,7 +12,7 @@ use fr_text::engine::text_engine::TextEngine;
 pub fn layout_of(page: &Page, width: f32) -> LayoutTree {
     let mut engine = TextEngine::new();
     layout_page(
-        &page.document,
+        &page.document.borrow(),
         &page.styles,
         &page.images,
         &mut engine,

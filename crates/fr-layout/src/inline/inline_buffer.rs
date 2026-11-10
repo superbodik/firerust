@@ -16,9 +16,9 @@ impl InlineBuffer {
         Self::default()
     }
 
-    pub fn push_text(&mut self, text: &str, style: &ComputedStyle, link: Option<NodeId>) {
+    pub fn push_text(&mut self, text: &str, style: &ComputedStyle, owner: Option<NodeId>) {
         if style.white_space == WhiteSpace::Pre {
-            self.push_preformatted(text, style, link);
+            self.push_preformatted(text, style, owner);
             return;
         }
         let mut piece = String::new();
@@ -33,7 +33,7 @@ impl InlineBuffer {
             self.has_pending_space = false;
             piece.push(character);
         }
-        self.append(piece, style, link);
+        self.append(piece, style, owner);
     }
 
     pub fn push_break(&mut self, style: &ComputedStyle) {
@@ -54,9 +54,9 @@ impl InlineBuffer {
         if has_content { self.runs } else { Vec::new() }
     }
 
-    fn push_preformatted(&mut self, text: &str, style: &ComputedStyle, link: Option<NodeId>) {
+    fn push_preformatted(&mut self, text: &str, style: &ComputedStyle, owner: Option<NodeId>) {
         self.has_pending_space = false;
-        self.append(text.to_owned(), style, link);
+        self.append(text.to_owned(), style, owner);
         self.is_after_break = text.ends_with('\n');
     }
 
@@ -64,14 +64,14 @@ impl InlineBuffer {
         !piece.is_empty() || (!self.runs.is_empty() && !self.is_after_break)
     }
 
-    fn append(&mut self, text: String, style: &ComputedStyle, link: Option<NodeId>) {
+    fn append(&mut self, text: String, style: &ComputedStyle, owner: Option<NodeId>) {
         if text.is_empty() {
             return;
         }
         if text != "\n" {
             self.is_after_break = false;
         }
-        let run = LayoutRun::from_style(text, style).with_link(link);
+        let run = LayoutRun::from_style(text, style).with_owner(owner);
         match self.runs.last_mut() {
             Some(last) if last.has_same_style(&run) => last.text.push_str(&run.text),
             _ => self.runs.push(run),

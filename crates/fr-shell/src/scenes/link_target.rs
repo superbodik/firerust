@@ -13,7 +13,7 @@ pub fn link_target(
     base: &Url,
     point: Point,
 ) -> Option<Url> {
-    let anchor = link_at(&layout.root, engine, point)?;
+    let anchor = link_at(&layout.root, engine, document, point)?;
     let href = document
         .node(anchor)?
         .kind()

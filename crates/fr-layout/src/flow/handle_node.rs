@@ -8,7 +8,6 @@ use crate::flow::flow_state::FlowState;
 use crate::flow::place_block::place_block;
 use crate::image::place_inline_image::place_inline_image;
 use crate::inline::flush_inline::flush_inline;
-use crate::inline::link_of::link_of;
 
 pub fn handle_node(
     context: &mut LayoutContext<'_>,
@@ -26,7 +25,7 @@ pub fn handle_node(
             .parent()
             .and_then(|parent| styles.get(parent))
             .unwrap_or(container);
-        state.inline.push_text(text, style, link_of(document, id));
+        state.inline.push_text(text, style, node.parent());
         return;
     }
     let Some(style) = styles.get(id) else {

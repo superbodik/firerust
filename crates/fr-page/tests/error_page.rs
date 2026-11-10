@@ -22,7 +22,7 @@ fn an_error_page_shows_the_address_and_the_message() {
 
     let page = error_page(url.clone(), "connection refused");
 
-    let text = text_content(&page.document, page.document.root());
+    let text = text_content(&page.document.borrow(), page.document.borrow().root());
     assert!(text.contains("Cannot open this page"));
     assert!(text.contains("https://example.com/missing"));
     assert!(text.contains("connection refused"));
@@ -35,6 +35,6 @@ fn markup_in_the_message_stays_text() {
 
     let page = error_page(url, "<script>alert(1)</script>");
 
-    let text = text_content(&page.document, page.document.root());
+    let text = text_content(&page.document.borrow(), page.document.borrow().root());
     assert!(text.contains("<script>alert(1)</script>"));
 }

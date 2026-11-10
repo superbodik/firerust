@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Menu</title>
+<style>
+body { font-family: sans-serif; background-color: #f4f1ea; }
+.bar { background-color: #b7410e; padding: 10px 16px; color: #ffffff; }
+.bar button { display: block; width: 100px; padding: 4px 12px; margin-bottom: 6px; background-color: #ffffff; color: #b7410e; text-align: center; }
+.menu { display: none; background-color: #ffffff; border: 1px solid #cccccc; width: 220px; }
+.menu.open { display: block; }
+.menu li { padding: 6px 12px; border-bottom: 1px solid #eeeeee; }
+.menu ul { margin: 0; padding: 0; }
+#status { margin-top: 16px; color: #333333; }
+</style>
+</head>
+<body>
+<div class="bar"><button id="toggle">Menu</button> Site</div>
+<div id="menu" class="menu">
+<ul>
+<li data-page="Home">Home</li>
+<li data-page="Docs">Docs</li>
+<li data-page="About">About</li>
+</ul>
+</div>
+<p id="status">Nothing chosen yet.</p>
+<script>
+var menu = document.getElementById('menu');
+var toggle = document.getElementById('toggle');
+var status = document.getElementById('status');
+
+toggle.addEventListener('click', function () {
+  menu.classList.toggle('open');
+  toggle.textContent = menu.classList.contains('open') ? 'Close' : 'Menu';
+});
+
+menu.addEventListener('click', function (event) {
+  var item = event.target.closest('li');
+  if (item) {
+    status.textContent = 'Chosen: ' + item.getAttribute('data-page');
+    menu.classList.remove('open');
+    toggle.textContent = 'Menu';
+  }
+});
+</script>
+</body>
+</html>

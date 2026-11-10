@@ -36,8 +36,12 @@ use fr_window::scene::scene_reaction::SceneReaction;
 use url::Url;
 
 use crate::scenes::address_text::address_text;
+use crate::scenes::dispatch_page_click::dispatch_page_click;
 use crate::scenes::fetch_page::fetch_page;
 use crate::scenes::link_target::link_target;
+use crate::scenes::refresh_active::refresh_active;
+use crate::scenes::run_due_timers::run_due_timers;
+use crate::scenes::timer_delay::timer_delay;
 use crate::toolbar::draw_memory_bar::draw_memory_bar;
 use crate::toolbar::draw_tab_strip::draw_tab_strip;
 use crate::toolbar::draw_toolbar::draw_toolbar;
@@ -193,7 +197,7 @@ impl PageScene {
         let point = Point::new(x, y - CHROME_HEIGHT + self.scroll.offset());
         link_target(
             layout,
-            &content.document,
+            &content.document.borrow(),
             &mut self.text_engine,
             tab.url(),
             point,
@@ -225,10 +229,15 @@ impl PageScene {
         }
         let was_focused = self.address.is_focused();
         self.address.blur();
-        match self.target_at(x, y) {
-            Some(url) => self.open(url.as_str()),
-            None if was_focused => SceneReaction::Redraw,
-            None => SceneReaction::Idle,
+        let link = self.target_at(x, y);
+        let page_point = Point::new(x, y - CHROME_HEIGHT + self.scroll.offset());
+        let allowed =
+            dispatch_page_click(&mut self.tabs, &mut self.text_engine, page_point, (x, y));
+        let changed = refresh_active(&mut self.tabs);
+        match link {
+            Some(url) if allowed => self.open(url.as_str()),
+            _ if changed || was_focused => SceneReaction::Redraw,
+            _ => SceneReaction::Idle,
         }
     }
 
@@ -300,7 +309,7 @@ impl PageScene {
             return;
         }
         let tree = layout_page(
-            &content.document,
+            &content.document.borrow(),
             &content.styles,
             &content.images,
             &mut self.text_engine,
@@ -377,6 +386,19 @@ impl RenderScene for PageScene {
             InputEvent::Character(_) => SceneReaction::Idle,
             InputEvent::Key(key) => self.press(key),
             InputEvent::Wheel { .. } => self.scroll_for(event),
+        }
+    }
+
+    fn next_wakeup(&mut self) -> Option<Duration> {
+        timer_delay(&mut self.tabs)
+    }
+
+    fn tick(&mut self) -> SceneReaction {
+        run_due_timers(&mut self.tabs);
+        if refresh_active(&mut self.tabs) {
+            SceneReaction::Redraw
+        } else {
+            SceneReaction::Idle
         }
     }
 

@@ -1,9 +1,12 @@
+use std::fmt;
+
 use boa_engine::object::ObjectInitializer;
 use boa_engine::property::Attribute;
 use boa_engine::{Context, JsString, JsValue, Source, js_string};
 use fr_dom::node::node_id::NodeId;
 use fr_dom::tree::shared_document::SharedDocument;
 
+use crate::clock::now_ms::now_ms;
 use crate::natives::console_write::take_console_lines;
 use crate::natives::register_natives::register_natives;
 use crate::runtime::describe_error::describe_error;
@@ -15,8 +18,22 @@ pub struct JsRuntime {
     context: Context,
 }
 
+impl fmt::Debug for JsRuntime {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.debug_struct("JsRuntime").finish_non_exhaustive()
+    }
+}
+
 impl JsRuntime {
     pub fn new(document: SharedDocument, address: &str) -> Result<Self, JsFailure> {
+        Self::with_start_time(document, address, now_ms())
+    }
+
+    pub fn with_start_time(
+        document: SharedDocument,
+        address: &str,
+        start_ms: f64,
+    ) -> Result<Self, JsFailure> {
         let mut context = Context::default();
         context.insert_data(document);
         if let Err(error) = register_natives(&mut context) {
@@ -27,6 +44,7 @@ impl JsRuntime {
         }
         let mut runtime = Self { context };
         runtime.call_host("init", &[JsValue::from(JsString::from(address))])?;
+        runtime.advance_time(start_ms)?;
         Ok(runtime)
     }
 

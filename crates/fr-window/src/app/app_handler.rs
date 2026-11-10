@@ -1,10 +1,11 @@
 use std::sync::Arc;
+use std::time::Instant;
 
 use fr_raster::surface::canvas::Canvas;
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
-use winit::event::{ElementState, MouseButton, WindowEvent};
-use winit::event_loop::ActiveEventLoop;
+use winit::event::{ElementState, MouseButton, StartCause, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, ControlFlow};
 use winit::keyboard::ModifiersState;
 use winit::window::{CursorIcon, Window, WindowId};
 
@@ -44,6 +45,10 @@ impl<S: RenderScene> AppHandler<S> {
 
     fn dispatch(&mut self, event: InputEvent) {
         let reaction = self.scene.handle(event);
+        self.apply(reaction);
+    }
+
+    fn apply(&mut self, reaction: SceneReaction) {
         let Some(window) = self.window.as_ref() else {
             return;
         };
@@ -81,6 +86,22 @@ impl<S: RenderScene> AppHandler<S> {
 }
 
 impl<S: RenderScene> ApplicationHandler for AppHandler<S> {
+    fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: StartCause) {
+        if matches!(cause, StartCause::ResumeTimeReached { .. }) {
+            let reaction = self.scene.tick();
+            self.apply(reaction);
+        }
+    }
+
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        match self.scene.next_wakeup() {
+            Some(delay) => {
+                event_loop.set_control_flow(ControlFlow::WaitUntil(Instant::now() + delay))
+            }
+            None => event_loop.set_control_flow(ControlFlow::Wait),
+        }
+    }
+
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_some() {
             return;

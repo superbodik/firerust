@@ -124,9 +124,43 @@
     return target.parentNode;
   }
 
+  var attributeHandlers = {};
+
+  function runAttributeHandler(target, event) {
+    if (!target || target.nodeType !== 1) {
+      return;
+    }
+    var code = target.getAttribute('on' + event.type);
+    if (code === null) {
+      return;
+    }
+    var key = target.__id + ':' + event.type;
+    var cached = attributeHandlers[key];
+    if (!cached || cached.code !== code) {
+      try {
+        cached = { code: code, run: new Function('event', code) };
+      } catch (error) {
+        reportError(error);
+        return;
+      }
+      attributeHandlers[key] = cached;
+    }
+    event.currentTarget = target;
+    try {
+      if (cached.run.call(target, event) === false) {
+        event.preventDefault();
+      }
+    } catch (error) {
+      reportError(error);
+    }
+  }
+
   function invoke(target, event, phase) {
     if (event.__stopped) {
       return;
+    }
+    if (phase !== 'capture') {
+      runAttributeHandler(target, event);
     }
     var list = listenersOf(target)[event.type];
     if (!list || list.length === 0) {

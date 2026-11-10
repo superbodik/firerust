@@ -16,7 +16,8 @@ pub struct Page {
 impl Page {
     pub fn new(html: &str) -> Self {
         let document = SharedDocument::new(parse_html(html));
-        let runtime = JsRuntime::new(document.clone(), "https://example.test/page").unwrap();
+        let runtime =
+            JsRuntime::with_start_time(document.clone(), "https://example.test/page", 0.0).unwrap();
         Self { runtime, document }
     }
 

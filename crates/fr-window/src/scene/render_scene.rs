@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use fr_raster::surface::canvas::Canvas;
 
 use crate::input::input_event::InputEvent;
@@ -17,5 +19,13 @@ pub trait RenderScene {
 
     fn pointer(&self) -> PointerKind {
         PointerKind::Arrow
+    }
+
+    fn next_wakeup(&mut self) -> Option<Duration> {
+        None
+    }
+
+    fn tick(&mut self) -> SceneReaction {
+        SceneReaction::Idle
     }
 }

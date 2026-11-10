@@ -15,7 +15,7 @@ pub struct LayoutRun {
     pub font_weight: u16,
     pub is_italic: bool,
     pub family: TextFamily,
-    pub link: Option<NodeId>,
+    pub owner: Option<NodeId>,
 }
 
 impl LayoutRun {
@@ -32,12 +32,12 @@ impl LayoutRun {
                 FontFamily::Serif => TextFamily::Serif,
                 FontFamily::Monospace => TextFamily::Monospace,
             },
-            link: None,
+            owner: None,
         }
     }
 
-    pub fn with_link(mut self, link: Option<NodeId>) -> Self {
-        self.link = link;
+    pub fn with_owner(mut self, owner: Option<NodeId>) -> Self {
+        self.owner = owner;
         self
     }
 
@@ -48,7 +48,7 @@ impl LayoutRun {
             && self.font_weight == other.font_weight
             && self.is_italic == other.is_italic
             && self.family == other.family
-            && self.link == other.link
+            && self.owner == other.owner
     }
 
     pub fn as_text_run(&self) -> TextRun<'_> {

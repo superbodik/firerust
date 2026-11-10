@@ -6,7 +6,7 @@ use crate::footprint::estimate_footprint::estimate_footprint;
 use crate::model::tab_content::TabContent;
 use crate::model::tab_id::TabId;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Tab {
     id: TabId,
     url: Url,

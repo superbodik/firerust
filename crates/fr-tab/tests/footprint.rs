@@ -15,7 +15,7 @@ fn content_of(html: &str) -> TabContent {
 fn with_layout(mut content: TabContent) -> TabContent {
     let mut engine = TextEngine::new();
     let tree = layout_page(
-        &content.document,
+        &content.document.borrow(),
         &content.styles,
         &content.images,
         &mut engine,
