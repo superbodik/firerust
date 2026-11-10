@@ -5,6 +5,7 @@ version.workspace = true
 publish.workspace = true
 
 [dependencies]
+fr-bookmarks.workspace = true
 fr-dom.workspace = true
 fr-form.workspace = true
 fr-geom.workspace = true

@@ -50,6 +50,8 @@ fn control_shortcut(physical: PhysicalKey) -> Option<KeyInput> {
         KeyCode::KeyL => Some(KeyInput::FocusAddress),
         KeyCode::KeyR => Some(KeyInput::Reload),
         KeyCode::KeyM => Some(KeyInput::ToggleMemoryPanel),
+        KeyCode::KeyD => Some(KeyInput::ToggleBookmark),
+        KeyCode::KeyB => Some(KeyInput::OpenBookmarks),
         KeyCode::Equal | KeyCode::NumpadAdd => Some(KeyInput::ZoomIn),
         KeyCode::Minus | KeyCode::NumpadSubtract => Some(KeyInput::ZoomOut),
         KeyCode::Digit0 | KeyCode::Numpad0 => Some(KeyInput::ZoomReset),

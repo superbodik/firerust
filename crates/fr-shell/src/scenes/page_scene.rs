@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
+use fr_bookmarks::storage::bookmark_book::{BookmarkBook, BookmarkChange};
 use fr_dom::node::node_id::NodeId;
 use fr_geom::color::rgba::Rgba;
 use fr_geom::geometry::point::Point;
@@ -10,7 +11,7 @@ use fr_layout::page::layout_page::layout_page_with_focus;
 use fr_mem::meter::memory_meter::MemoryMeter;
 use fr_net::load::request::Request;
 use fr_page::images::shared_image_cache::shared_image_bytes;
-use fr_page::load::blank_page::{BLANK_ADDRESS, blank_page};
+use fr_page::load::blank_page::blank_page;
 use fr_page::load::build_page::build_prefetched;
 use fr_page::load::error_page::error_page;
 use fr_page::load::page::Page;
@@ -42,6 +43,7 @@ use fr_window::scene::render_scene::RenderScene;
 use fr_window::scene::scene_reaction::SceneReaction;
 use url::Url;
 
+use crate::internal::internal_page::internal_page;
 use crate::scenes::address_text::address_text;
 use crate::scenes::click_control::click_control;
 use crate::scenes::control_action::ControlAction;
@@ -73,6 +75,7 @@ use crate::toolbar::toolbar_state::ToolbarState;
 const MAX_LIVE_TABS: usize = 2;
 const MEMORY_REFRESH: Duration = Duration::from_secs(1);
 const LOAD_POLL: Duration = Duration::from_millis(33);
+const NOTICE_LIFETIME: Duration = Duration::from_secs(3);
 
 pub struct PageScene {
     tabs: TabSet,
@@ -88,6 +91,8 @@ pub struct PageScene {
     form: FormFocus,
     pending: Option<PendingLoad>,
     zooms: HashMap<String, ZoomLevel>,
+    bookmarks: BookmarkBook,
+    notice: Option<(String, Instant)>,
 }
 
 impl PageScene {
@@ -108,6 +113,8 @@ impl PageScene {
             form: FormFocus::new(),
             pending: None,
             zooms: HashMap::new(),
+            bookmarks: BookmarkBook::open(),
+            notice: None,
         }
     }
 
@@ -181,18 +188,19 @@ impl PageScene {
     }
 
     fn begin_request(&mut self, request: Request, target: LoadTarget) {
+        if request.url.scheme() == "about" {
+            self.pending = None;
+            if let Some(page) = internal_page(&request.url, &mut self.bookmarks) {
+                self.apply_page(page, target);
+            }
+            return;
+        }
         let tab = self.tabs.active().id();
         self.address.set_text(&address_text(&request.url));
         self.pending = Some(PendingLoad::start(request, target, tab));
     }
 
     fn open(&mut self, input: &str) -> SceneReaction {
-        if input.trim() == BLANK_ADDRESS {
-            return match blank_page() {
-                Some(page) => self.navigate(page),
-                None => SceneReaction::Redraw,
-            };
-        }
         self.open_request(request_for(input))
     }
 
@@ -201,6 +209,47 @@ impl PageScene {
             self.begin_request(request, LoadTarget::Navigate);
         }
         SceneReaction::Redraw
+    }
+
+    fn apply_page(&mut self, page: Page, target: LoadTarget) {
+        match target {
+            LoadTarget::Initial => {
+                self.tabs
+                    .active_mut()
+                    .history_mut()
+                    .replace_current(page.url.clone());
+                self.tabs.active_mut().show(page);
+                self.after_navigation(0.0);
+            }
+            LoadTarget::Navigate => {
+                self.navigate(page);
+            }
+            LoadTarget::Travel { scroll } | LoadTarget::Reload { scroll } => {
+                self.tabs.active_mut().show(page);
+                self.after_navigation(scroll);
+            }
+            LoadTarget::Restore { scroll } => {
+                self.tabs.active_mut().restore(page);
+                self.after_navigation(scroll);
+                self.tabs.enforce_limit(MAX_LIVE_TABS);
+            }
+        }
+    }
+
+    fn toggle_bookmark(&mut self) -> SceneReaction {
+        let url = self.tabs.active().url().to_string();
+        let title = self.tabs.active().title();
+        let message = match self.bookmarks.toggle(&title, &url) {
+            BookmarkChange::Added => "Bookmark added (Ctrl+B shows them)",
+            BookmarkChange::Removed => "Bookmark removed",
+            BookmarkChange::Unsupported => "Only web pages can be bookmarked",
+        };
+        self.notice = Some((message.to_owned(), Instant::now()));
+        SceneReaction::Redraw
+    }
+
+    fn open_bookmarks(&mut self) -> SceneReaction {
+        self.open("about:bookmarks")
     }
 
     fn finish_load(&mut self) -> bool {
@@ -223,32 +272,7 @@ impl PageScene {
                 error_page(pending.url.clone(), &message)
             }
         };
-        match pending.target {
-            LoadTarget::Initial => {
-                self.tabs
-                    .active_mut()
-                    .history_mut()
-                    .replace_current(page.url.clone());
-                self.tabs.active_mut().show(page);
-                self.after_navigation(0.0);
-            }
-            LoadTarget::Navigate => {
-                self.navigate(page);
-            }
-            LoadTarget::Travel { scroll } => {
-                self.tabs.active_mut().show(page);
-                self.after_navigation(scroll);
-            }
-            LoadTarget::Reload { scroll } => {
-                self.tabs.active_mut().show(page);
-                self.after_navigation(scroll);
-            }
-            LoadTarget::Restore { scroll } => {
-                self.tabs.active_mut().restore(page);
-                self.after_navigation(scroll);
-                self.tabs.enforce_limit(MAX_LIVE_TABS);
-            }
-        }
+        self.apply_page(page, pending.target);
         true
     }
 
@@ -437,6 +461,8 @@ impl PageScene {
             KeyInput::CloseTab => self.close_tab(active),
             KeyInput::NextTab => self.switch_to((active + 1) % count),
             KeyInput::PreviousTab => self.switch_to((active + count - 1) % count),
+            KeyInput::ToggleBookmark => self.toggle_bookmark(),
+            KeyInput::OpenBookmarks => self.open_bookmarks(),
             KeyInput::ZoomIn => self.change_zoom(ZoomLevel::zoom_in),
             KeyInput::ZoomOut => self.change_zoom(ZoomLevel::zoom_out),
             KeyInput::ZoomReset => self.change_zoom(|_| ZoomLevel::new()),
@@ -605,6 +631,9 @@ impl RenderScene for PageScene {
             let summary = memory_summary(process, self.tabs.tabs(), shared_image_bytes());
             draw_memory_bar(canvas, &mut self.text_engine, &summary);
         }
+        if let Some((message, _)) = &self.notice {
+            draw_memory_bar(canvas, &mut self.text_engine, message);
+        }
     }
 
     fn handle(&mut self, event: InputEvent) -> SceneReaction {
@@ -633,17 +662,28 @@ impl RenderScene for PageScene {
     }
 
     fn next_wakeup(&mut self) -> Option<Duration> {
-        let timers = timer_delay(&mut self.tabs);
+        let mut wait = timer_delay(&mut self.tabs);
         if self.pending.is_some() {
-            return Some(timers.map_or(LOAD_POLL, |delay| delay.min(LOAD_POLL)));
+            wait = Some(wait.map_or(LOAD_POLL, |delay| delay.min(LOAD_POLL)));
         }
-        timers
+        if let Some((_, shown)) = &self.notice {
+            let left = NOTICE_LIFETIME.saturating_sub(shown.elapsed());
+            wait = Some(wait.map_or(left, |delay| delay.min(left)));
+        }
+        wait
     }
 
     fn tick(&mut self) -> SceneReaction {
         let loaded = self.finish_load();
+        let expired = self
+            .notice
+            .as_ref()
+            .is_some_and(|(_, shown)| shown.elapsed() >= NOTICE_LIFETIME);
+        if expired {
+            self.notice = None;
+        }
         run_due_timers(&mut self.tabs);
-        if refresh_active(&mut self.tabs) || loaded || self.pending.is_some() {
+        if refresh_active(&mut self.tabs) || loaded || expired || self.pending.is_some() {
             SceneReaction::Redraw
         } else {
             SceneReaction::Idle

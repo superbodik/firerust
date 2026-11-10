@@ -126,3 +126,23 @@ fn only_identical_scheme_host_and_port_are_the_same_origin() {
     ));
     assert!(!same_origin(&url("file:///a.html"), &url("file:///a.html")));
 }
+
+#[test]
+fn internal_pages_may_link_to_each_other_but_web_pages_may_not_link_to_them() {
+    assert_eq!(
+        check_navigation(&url("about:bookmarks"), &url("about:import")),
+        Ok(())
+    );
+    assert_eq!(
+        check_navigation(&url("about:bookmarks"), &url("https://a.test/")),
+        Ok(())
+    );
+    assert_eq!(
+        check_navigation(&url("https://a.test/"), &url("about:bookmarks")),
+        Err(BlockReason::UnsupportedScheme)
+    );
+    assert_eq!(
+        check_navigation(&url("file:///C:/a.html"), &url("about:bookmarks")),
+        Err(BlockReason::UnsupportedScheme)
+    );
+}

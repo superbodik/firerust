@@ -1,4 +1,5 @@
 mod browser;
+mod internal;
 mod scenes;
 mod toolbar;
 

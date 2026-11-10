@@ -25,6 +25,8 @@ pub enum KeyInput {
     ZoomIn,
     ZoomOut,
     ZoomReset,
+    ToggleBookmark,
+    OpenBookmarks,
     FocusNext,
     FocusPrevious,
 }

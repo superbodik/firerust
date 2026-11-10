@@ -1008,6 +1008,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fr-bookmarks"
+version = "0.0.1"
+dependencies = [
+ "fr-dom",
+ "fr-html",
+ "serde_json",
+]
+
+[[package]]
 name = "fr-cache"
 version = "0.0.1"
 
@@ -1159,6 +1168,7 @@ dependencies = [
 name = "fr-shell"
 version = "0.0.1"
 dependencies = [
+ "fr-bookmarks",
  "fr-dom",
  "fr-form",
  "fr-geom",
