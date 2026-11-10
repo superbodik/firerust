@@ -1035,6 +1035,10 @@ name = "fr-dom"
 version = "0.0.1"
 
 [[package]]
+name = "fr-dpapi"
+version = "0.0.1"
+
+[[package]]
 name = "fr-form"
 version = "0.0.1"
 dependencies = [
@@ -1148,6 +1152,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fr-passwords"
+version = "0.0.1"
+dependencies = [
+ "fr-dpapi",
+ "serde_json",
+ "url",
+]
+
+[[package]]
 name = "fr-raster"
 version = "0.0.1"
 dependencies = [
@@ -1178,6 +1191,7 @@ dependencies = [
  "fr-net",
  "fr-page",
  "fr-paint",
+ "fr-passwords",
  "fr-raster",
  "fr-tab",
  "fr-text",

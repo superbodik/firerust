@@ -26,6 +26,8 @@ ureq = { version = "3.5.1", features = ["brotli", "cookies"] }
 url = "2.5.8"
 winit = "0.30.13"
 fr-bookmarks = { version = "0.0.1", path = "crates/fr-bookmarks" }
+fr-dpapi = { version = "0.0.1", path = "crates/fr-dpapi" }
+fr-passwords = { version = "0.0.1", path = "crates/fr-passwords" }
 fr-cache = { version = "0.0.1", path = "crates/fr-cache" }
 fr-css = { version = "0.0.1", path = "crates/fr-css" }
 fr-dom = { version = "0.0.1", path = "crates/fr-dom" }

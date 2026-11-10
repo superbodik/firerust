@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use fr_bookmarks::storage::bookmark_book::{BookmarkBook, BookmarkChange};
 use fr_dom::node::node_id::NodeId;
@@ -17,6 +17,8 @@ use fr_page::load::error_page::error_page;
 use fr_page::load::page::Page;
 use fr_paint::build::build_display_list::build_display_list;
 use fr_paint::paint::paint_display_list::paint_display_list;
+use fr_passwords::model::credential::Credential;
+use fr_passwords::storage::password_vault::PasswordVault;
 use fr_raster::draw::clear::clear;
 use fr_raster::draw::fill_rect::fill_rect;
 use fr_raster::surface::canvas::Canvas;
@@ -45,6 +47,7 @@ use url::Url;
 
 use crate::internal::internal_page::internal_page;
 use crate::scenes::address_text::address_text;
+use crate::scenes::autofill_logins::autofill_logins;
 use crate::scenes::click_control::click_control;
 use crate::scenes::control_action::ControlAction;
 use crate::scenes::control_at::control_at;
@@ -58,7 +61,9 @@ use crate::scenes::form_request::form_request;
 use crate::scenes::invalidate_layout::invalidate_layout;
 use crate::scenes::link_target::link_target;
 use crate::scenes::load_target::LoadTarget;
+use crate::scenes::login_to_save::login_to_save;
 use crate::scenes::neighbour_in::neighbour_in;
+use crate::scenes::notice::Notice;
 use crate::scenes::pending_load::PendingLoad;
 use crate::scenes::refresh_active::refresh_active;
 use crate::scenes::request_for::request_for;
@@ -76,6 +81,7 @@ const MAX_LIVE_TABS: usize = 2;
 const MEMORY_REFRESH: Duration = Duration::from_secs(1);
 const LOAD_POLL: Duration = Duration::from_millis(33);
 const NOTICE_LIFETIME: Duration = Duration::from_secs(3);
+const SAVE_PROMPT_LIFETIME: Duration = Duration::from_secs(10);
 
 pub struct PageScene {
     tabs: TabSet,
@@ -92,7 +98,9 @@ pub struct PageScene {
     pending: Option<PendingLoad>,
     zooms: HashMap<String, ZoomLevel>,
     bookmarks: BookmarkBook,
-    notice: Option<(String, Instant)>,
+    notice: Option<Notice>,
+    vault: PasswordVault,
+    pending_login: Option<Credential>,
 }
 
 impl PageScene {
@@ -115,6 +123,8 @@ impl PageScene {
             zooms: HashMap::new(),
             bookmarks: BookmarkBook::open(),
             notice: None,
+            vault: PasswordVault::open(),
+            pending_login: None,
         }
     }
 
@@ -190,7 +200,7 @@ impl PageScene {
     fn begin_request(&mut self, request: Request, target: LoadTarget) {
         if request.url.scheme() == "about" {
             self.pending = None;
-            if let Some(page) = internal_page(&request.url, &mut self.bookmarks) {
+            if let Some(page) = internal_page(&request.url, &mut self.bookmarks, &mut self.vault) {
                 self.apply_page(page, target);
             }
             return;
@@ -234,6 +244,42 @@ impl PageScene {
                 self.tabs.enforce_limit(MAX_LIVE_TABS);
             }
         }
+        if autofill_logins(&mut self.tabs, &self.vault) {
+            refresh_active(&mut self.tabs);
+        }
+    }
+
+    fn remember_login(&mut self, form: NodeId) {
+        let Some(login) = login_to_save(&mut self.tabs, &self.vault, form) else {
+            return;
+        };
+        let message = format!(
+            "Save the password for {} on {}? Press Ctrl+S",
+            if login.username.is_empty() {
+                "this login"
+            } else {
+                login.username.as_str()
+            },
+            login.origin
+        );
+        self.pending_login = Some(login);
+        self.notice = Some(Notice::new(&message, SAVE_PROMPT_LIFETIME));
+    }
+
+    fn save_password(&mut self) -> SceneReaction {
+        let message = match self.pending_login.take() {
+            Some(login) => {
+                self.vault.save_login(login);
+                "Password saved (Ctrl+P shows them)"
+            }
+            None => "No new password to save: sign in on a site first",
+        };
+        self.notice = Some(Notice::new(message, NOTICE_LIFETIME));
+        SceneReaction::Redraw
+    }
+
+    fn open_passwords(&mut self) -> SceneReaction {
+        self.open("about:passwords")
     }
 
     fn toggle_bookmark(&mut self) -> SceneReaction {
@@ -244,7 +290,7 @@ impl PageScene {
             BookmarkChange::Removed => "Bookmark removed",
             BookmarkChange::Unsupported => "Only web pages can be bookmarked",
         };
-        self.notice = Some((message.to_owned(), Instant::now()));
+        self.notice = Some(Notice::new(message, NOTICE_LIFETIME));
         SceneReaction::Redraw
     }
 
@@ -461,6 +507,8 @@ impl PageScene {
             KeyInput::CloseTab => self.close_tab(active),
             KeyInput::NextTab => self.switch_to((active + 1) % count),
             KeyInput::PreviousTab => self.switch_to((active + count - 1) % count),
+            KeyInput::SavePassword => self.save_password(),
+            KeyInput::OpenPasswords => self.open_passwords(),
             KeyInput::ToggleBookmark => self.toggle_bookmark(),
             KeyInput::OpenBookmarks => self.open_bookmarks(),
             KeyInput::ZoomIn => self.change_zoom(ZoomLevel::zoom_in),
@@ -504,6 +552,7 @@ impl PageScene {
         if !allowed {
             return SceneReaction::Redraw;
         }
+        self.remember_login(form);
         match form_request(&mut self.tabs, form, submitter) {
             Some(request) => self.open_request(Some(request)),
             None => SceneReaction::Idle,
@@ -631,8 +680,8 @@ impl RenderScene for PageScene {
             let summary = memory_summary(process, self.tabs.tabs(), shared_image_bytes());
             draw_memory_bar(canvas, &mut self.text_engine, &summary);
         }
-        if let Some((message, _)) = &self.notice {
-            draw_memory_bar(canvas, &mut self.text_engine, message);
+        if let Some(notice) = &self.notice {
+            draw_memory_bar(canvas, &mut self.text_engine, &notice.message);
         }
     }
 
@@ -666,8 +715,8 @@ impl RenderScene for PageScene {
         if self.pending.is_some() {
             wait = Some(wait.map_or(LOAD_POLL, |delay| delay.min(LOAD_POLL)));
         }
-        if let Some((_, shown)) = &self.notice {
-            let left = NOTICE_LIFETIME.saturating_sub(shown.elapsed());
+        if let Some(notice) = &self.notice {
+            let left = notice.remaining();
             wait = Some(wait.map_or(left, |delay| delay.min(left)));
         }
         wait
@@ -675,12 +724,10 @@ impl RenderScene for PageScene {
 
     fn tick(&mut self) -> SceneReaction {
         let loaded = self.finish_load();
-        let expired = self
-            .notice
-            .as_ref()
-            .is_some_and(|(_, shown)| shown.elapsed() >= NOTICE_LIFETIME);
+        let expired = self.notice.as_ref().is_some_and(Notice::is_expired);
         if expired {
             self.notice = None;
+            self.pending_login = None;
         }
         run_due_timers(&mut self.tabs);
         if refresh_active(&mut self.tabs) || loaded || expired || self.pending.is_some() {

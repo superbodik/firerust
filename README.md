@@ -42,6 +42,7 @@ The goal is simple: open simple and medium-complexity sites while using noticeab
 - Tabs: new tab, close, switch; background tabs beyond the two most recently used drop their page from memory and are fetched again when selected
 - A shared byte-limited image cache and a memory panel (`Ctrl+M`)
 - Bookmarks: `Ctrl+D` bookmarks or unbookmarks the page, `Ctrl+B` opens the list, `about:import` brings bookmarks in from Chrome, Edge, Brave, Vivaldi, Opera or any HTML export (Firefox included)
+- Passwords: after you sign in the bottom bar offers to save the login (`Ctrl+S`), saved logins are filled into the form when you come back, `Ctrl+P` lists them, `about:import-passwords` brings them in from a CSV export of Chrome, Edge, Firefox or Bitwarden; the file is encrypted with your Windows account key
 - Safety: a web page cannot read local files or link to them, a secure page cannot load insecure images, styles or scripts, and a `Content-Security-Policy` meta tag limits where scripts, styles and images come from
 - Networking: page character sets (windows-1251, KOI8-R and the rest of the web set), gzip and brotli, redirects, cookies, POST requests
 - Forms: text fields, passwords, checkboxes, radio buttons, selects, text areas and buttons you can click and type into, Tab between them, GET and POST submission, `input`, `change` and `submit` events for scripts
@@ -112,6 +113,8 @@ fr-shell ─ binary: entry point and scenes
  ├─ fr-window   window (winit), input events, frame output (softbuffer)
  ├─ fr-ui       scroll state, address field, toolbar geometry (no window needed)
  ├─ fr-bookmarks bookmark list, file storage and import from other browsers
+ ├─ fr-passwords saved logins in an encrypted file, CSV import
+ ├─ fr-dpapi    Windows DPAPI wrapper, the only crate with unsafe code
  ├─ fr-security page safety rules: mixed content, local files, content security policy
  ├─ fr-js       JavaScript runtime on Boa: DOM, events, timers
  ├─ fr-form     form fields, GET and POST requests, focus order
@@ -147,7 +150,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-About 670 tests pass. One network test is run manually:
+About 700 tests pass. One network test is run manually:
 
 ```
 cargo test -p fr-page --test real_sites -- --ignored
@@ -172,7 +175,7 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 
 ## Known limitations
 
-- Bookmarks have no folders in the interface beyond headings and no search; Firefox bookmarks come only through its HTML export; passwords are not imported yet
+- Bookmarks have no folders in the interface beyond headings and no search; Firefox bookmarks come only through its HTML export; passwords are imported from CSV only, not read straight from Chrome or Edge profiles (they are in SQLite and tied to the browser key), and the stored passwords sit in memory unencrypted while the browser runs
 - Content security policy is read only from the meta tag, not from response headers; no nonces or hashes
 - Form controls take a line of their own, a select changes on click without a drop-down, no file upload, no `reset` button, no form validation; cookies live only in memory; going back after a POST asks the address again with GET
 - Scripts and the final page build still run on the window thread, so a heavy page can stall the window while it is built; several start addresses after the first load one after another

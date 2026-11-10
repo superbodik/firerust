@@ -1,4 +1,5 @@
 pub mod address_text;
+pub mod autofill_logins;
 pub mod click_control;
 pub mod control_action;
 pub mod control_at;
@@ -12,7 +13,9 @@ pub mod form_request;
 pub mod invalidate_layout;
 pub mod link_target;
 pub mod load_target;
+pub mod login_to_save;
 pub mod neighbour_in;
+pub mod notice;
 pub mod page_scene;
 pub mod pending_load;
 pub mod read_control_text;
