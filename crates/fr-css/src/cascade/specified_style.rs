@@ -3,6 +3,7 @@ use fr_geom::color::rgba::Rgba;
 use crate::parse::declaration::Declaration;
 use crate::value::align_items::AlignItems;
 use crate::value::box_sizing::BoxSizing;
+use crate::value::corners::Corners;
 use crate::value::display::Display;
 use crate::value::edges::Edges;
 use crate::value::flex_direction::FlexDirection;
@@ -35,6 +36,8 @@ pub struct SpecifiedStyle {
     pub padding: Edges<Option<Length>>,
     pub border_width: Edges<Option<Length>>,
     pub border_color: Option<Rgba>,
+    pub accent_color: Option<Rgba>,
+    pub border_radius: Corners<Option<Length>>,
     pub flex_direction: Option<FlexDirection>,
     pub flex_wrap: Option<bool>,
     pub justify_content: Option<JustifyContent>,
@@ -68,6 +71,10 @@ impl SpecifiedStyle {
             Declaration::Padding(side, value) => self.padding.set(*side, Some(*value)),
             Declaration::BorderWidth(side, value) => self.border_width.set(*side, Some(*value)),
             Declaration::BorderColor(value) => self.border_color = Some(*value),
+            Declaration::AccentColor(value) => self.accent_color = Some(*value),
+            Declaration::BorderRadius(corner, value) => {
+                self.border_radius.set(*corner, Some(*value))
+            }
             Declaration::FlexDirection(value) => self.flex_direction = Some(*value),
             Declaration::FlexWrap(value) => self.flex_wrap = Some(*value),
             Declaration::JustifyContent(value) => self.justify_content = Some(*value),

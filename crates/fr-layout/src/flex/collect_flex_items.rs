@@ -5,8 +5,10 @@ use fr_dom::node::node_id::NodeId;
 use fr_dom::tree::document::Document;
 
 use crate::context::layout_context::LayoutContext;
+use crate::control::control_kind_of::control_kind_of;
 use crate::flex::anonymous_style::anonymous_style;
 use crate::flex::flex_item::FlexItem;
+use crate::image::is_replaced::is_replaced;
 
 pub fn collect_flex_items(
     context: &LayoutContext<'_>,
@@ -29,7 +31,12 @@ pub fn collect_flex_items(
         match styles.get(child) {
             None => {}
             Some(style) if style.display == Display::None => {}
-            Some(style) if style.display == Display::Inline => group.push(child),
+            Some(style)
+                if style.display == Display::Inline
+                    && (is_replaced(document, child) || is_control(document, child)) =>
+            {
+                group.push(child)
+            }
             Some(style) => {
                 flush_group(document, styles, container, &mut group, &mut items);
                 items.push(FlexItem::Element {
@@ -68,4 +75,8 @@ fn flush_group(
             style: anonymous_style(container),
         });
     }
+}
+
+fn is_control(document: &Document, node: NodeId) -> bool {
+    control_kind_of(document, node).is_some()
 }

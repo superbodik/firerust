@@ -12,6 +12,7 @@ pub struct Palette {
     pub field_background: Rgba,
     pub field_hover: Rgba,
     pub field_focused: Rgba,
+    pub field_border: Rgba,
     pub field_text: Rgba,
     pub field_hint: Rgba,
     pub selection: Rgba,
@@ -35,4 +36,6 @@ pub struct Palette {
     pub page_card: Rgba,
     pub page_border: Rgba,
     pub page_link: Rgba,
+    pub key_background: Rgba,
+    pub key_border: Rgba,
 }

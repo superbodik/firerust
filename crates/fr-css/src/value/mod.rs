@@ -1,5 +1,7 @@
 pub mod align_items;
 pub mod box_sizing;
+pub mod corner;
+pub mod corners;
 pub mod display;
 pub mod edges;
 pub mod flex_direction;

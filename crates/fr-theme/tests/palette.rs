@@ -47,7 +47,7 @@ fn the_page_css_uses_the_palette_colours() {
     let light = internal_css(palette_for(ThemeKind::Light));
     let dark = internal_css(palette_for(ThemeKind::Dark));
 
-    assert!(light.contains("#f6f4ef"));
-    assert!(dark.contains("#1a1c23"));
+    assert!(light.contains("#fbf9f5"));
+    assert!(dark.contains("#1e1c19"));
     assert_ne!(light, dark);
 }

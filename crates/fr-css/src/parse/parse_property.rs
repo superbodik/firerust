@@ -4,6 +4,7 @@ use crate::parse::declaration::Declaration;
 use crate::parse::parse_align_items::parse_align_items;
 use crate::parse::parse_background::parse_background;
 use crate::parse::parse_border::parse_border;
+use crate::parse::parse_border_radius::{parse_border_radius, parse_corner_radius};
 use crate::parse::parse_box_sizing::parse_box_sizing;
 use crate::parse::parse_color::parse_color;
 use crate::parse::parse_display::parse_display;
@@ -21,6 +22,7 @@ use crate::parse::parse_line_height::parse_line_height;
 use crate::parse::parse_text_align::parse_text_align;
 use crate::parse::parse_white_space::parse_white_space;
 use crate::parse::side_from_name::side_from_name;
+use crate::value::corner::Corner;
 use crate::value::edges::Edges;
 use crate::value::length::Length;
 use crate::value::side::Side;
@@ -47,7 +49,13 @@ pub fn parse_property(name: &str, parser: &mut Parser<'_>) -> Option<Vec<Declara
         "padding" => parse_edges(parser).map(|edges| expand(edges, Declaration::Padding)),
         "border-width" => parse_edges(parser).map(|edges| expand(edges, Declaration::BorderWidth)),
         "border-color" => single(parse_color(parser), Declaration::BorderColor),
+        "accent-color" => single(parse_color(parser), Declaration::AccentColor),
         "border" => parse_border(parser, &Side::ALL),
+        "border-radius" => parse_border_radius(parser),
+        "border-top-left-radius" => parse_corner_radius(parser, Corner::TopLeft),
+        "border-top-right-radius" => parse_corner_radius(parser, Corner::TopRight),
+        "border-bottom-right-radius" => parse_corner_radius(parser, Corner::BottomRight),
+        "border-bottom-left-radius" => parse_corner_radius(parser, Corner::BottomLeft),
         "flex-direction" => single(parse_flex_direction(parser), Declaration::FlexDirection),
         "flex-wrap" => single(parse_flex_wrap(parser), Declaration::FlexWrap),
         "justify-content" => single(parse_justify_content(parser), Declaration::JustifyContent),

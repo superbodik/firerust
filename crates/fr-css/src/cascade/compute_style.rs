@@ -45,6 +45,10 @@ pub fn compute_style(specified: &SpecifiedStyle, parent: &ComputedStyle) -> Comp
             .border_width
             .map(|value| relative(value, Length::Px(0.0)).px_or_zero()),
         border_color: specified.border_color.unwrap_or(color),
+        accent_color: specified.accent_color.or(parent.accent_color),
+        border_radius: specified
+            .border_radius
+            .map(|value| relative(value, Length::Px(0.0))),
         flex: FlexStyle {
             direction: specified.flex_direction.unwrap_or_default(),
             is_wrapping: specified.flex_wrap.unwrap_or(false),

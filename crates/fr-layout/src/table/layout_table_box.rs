@@ -13,6 +13,7 @@ use crate::context::layout_context::LayoutContext;
 use crate::image::attr_length::attr_length;
 use crate::metrics::resolve_length::resolve_length;
 use crate::metrics::resolve_metrics::resolve_metrics;
+use crate::metrics::resolve_radii::resolve_radii;
 use crate::table::collect_table::collect_table;
 use crate::table::distribute_columns::distribute_columns;
 use crate::table::measure_columns::measure_columns;
@@ -92,6 +93,7 @@ pub fn layout_table_box(
     layout_box.border_width = metrics.border;
     layout_box.border_color = style.border_color;
     layout_box.background = style.background_color;
+    layout_box.radii = resolve_radii(style, rect.size.width, rect.size.height);
     layout_box.children = rows;
     BlockResult {
         layout_box,

@@ -15,7 +15,7 @@ const FONT_SIZE: f32 = 13.0;
 const HEIGHT: f32 = 36.0;
 const SIDE_PADDING: f32 = 18.0;
 const BOTTOM_GAP: f32 = 22.0;
-const CORNER: f32 = 18.0;
+const CORNER: f32 = 8.0;
 const SCREEN_MARGIN: f32 = 24.0;
 
 pub fn draw_notice(

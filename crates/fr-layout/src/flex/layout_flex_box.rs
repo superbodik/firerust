@@ -14,6 +14,7 @@ use crate::flex::layout_item::layout_item;
 use crate::flex::measure_item::measure_item;
 use crate::flex::taffy_style::{taffy_container_style, taffy_item_style};
 use crate::metrics::resolve_metrics::resolve_metrics;
+use crate::metrics::resolve_radii::resolve_radii;
 use crate::metrics::resolve_widths::resolve_widths;
 
 pub fn layout_flex_box(
@@ -99,6 +100,7 @@ pub fn layout_flex_box(
     layout_box.border_width = metrics.border;
     layout_box.border_color = style.border_color;
     layout_box.background = style.background_color;
+    layout_box.radii = resolve_radii(style, rect.size.width, rect.size.height);
     layout_box.children = children;
     BlockResult {
         layout_box,

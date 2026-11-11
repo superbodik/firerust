@@ -2,12 +2,11 @@ use std::time::Duration;
 
 use fr_geom::geometry::rect::Rect;
 use fr_raster::draw::fill_rect::fill_rect;
-use fr_raster::draw::fill_rounded_rect::fill_rounded_rect;
 use fr_raster::surface::canvas::Canvas;
 use fr_theme::colors::palette::Palette;
 use fr_ui::toolbar::toolbar_metrics::CHROME_HEIGHT;
 
-const BAR_HEIGHT: f32 = 3.0;
+const BAR_HEIGHT: f32 = 2.0;
 const SWEEP_SECONDS: f32 = 1.4;
 const SEGMENT_SHARE: f32 = 0.3;
 
@@ -25,10 +24,9 @@ pub fn draw_load_bar(canvas: &mut Canvas, palette: &Palette, elapsed: Duration) 
     let start = left.max(0.0);
     let end = (left + segment).min(width);
     if end > start {
-        fill_rounded_rect(
+        fill_rect(
             canvas,
             Rect::from_xywh(start, top, end - start, BAR_HEIGHT),
-            BAR_HEIGHT / 2.0,
             palette.accent,
         );
     }

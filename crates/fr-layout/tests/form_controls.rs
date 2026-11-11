@@ -46,7 +46,7 @@ fn an_empty_input_with_a_placeholder_shows_it_in_grey() {
     let BoxKind::Text(text) = &field.children[0].kind else {
         panic!("text child");
     };
-    assert_eq!(text.runs[0].color, Rgba::opaque(140, 140, 140));
+    assert_eq!(text.runs[0].color, Rgba::opaque(138, 138, 138));
 }
 
 #[test]

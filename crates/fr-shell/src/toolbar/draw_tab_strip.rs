@@ -20,8 +20,9 @@ use crate::toolbar::tab_strip_state::TabStripState;
 use crate::toolbar::toolbar_run::toolbar_run;
 
 const LABEL_FONT_SIZE: f32 = 13.0;
-const TAB_CORNER: f32 = 10.0;
-const HOVER_CORNER: f32 = 8.0;
+const TAB_CORNER: f32 = 8.0;
+const HOVER_CORNER: f32 = 6.0;
+const ACCENT_BAR: f32 = 2.0;
 const TAB_GAP: f32 = 2.0;
 const TAB_ICON_SIZE: f32 = 14.0;
 const CLOSE_ICON_SIZE: f32 = 10.0;
@@ -114,6 +115,16 @@ fn draw_tab(
             TAB_CORNER,
             palette.tab_active,
         );
+        fill_rect(
+            canvas,
+            Rect::from_xywh(
+                rect.origin.x + TAB_CORNER,
+                rect.origin.y,
+                (rect.size.width - 2.0 * TAB_CORNER).max(0.0),
+                ACCENT_BAR,
+            ),
+            palette.accent,
+        );
     } else if is_hovered {
         fill_rounded_rect(
             canvas,
@@ -161,7 +172,7 @@ fn draw_tab(
     if count > 1 && (is_active || is_hovered) {
         let close = close_rect(index, count, width);
         if state.hover == ChromeHover::TabClose(index) {
-            fill_rounded_rect(canvas, close, close.size.width / 2.0, palette.button_hover);
+            fill_rounded_rect(canvas, close, HOVER_CORNER - 1.0, palette.button_hover);
         }
         draw_icon(canvas, Icon::Close, close, CLOSE_ICON_SIZE, palette.icon);
     }

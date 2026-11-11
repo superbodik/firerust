@@ -1,6 +1,7 @@
 use fr_geom::color::rgba::Rgba;
 
 use crate::value::box_sizing::BoxSizing;
+use crate::value::corners::Corners;
 use crate::value::display::Display;
 use crate::value::edges::Edges;
 use crate::value::flex_style::FlexStyle;
@@ -30,6 +31,8 @@ pub struct ComputedStyle {
     pub padding: Edges<Length>,
     pub border_width: Edges<f32>,
     pub border_color: Rgba,
+    pub accent_color: Option<Rgba>,
+    pub border_radius: Corners<Length>,
     pub flex: FlexStyle,
 }
 
@@ -52,6 +55,8 @@ impl ComputedStyle {
             padding: Edges::uniform(Length::Px(0.0)),
             border_width: Edges::uniform(0.0),
             border_color: Rgba::BLACK,
+            accent_color: None,
+            border_radius: Corners::uniform(Length::Px(0.0)),
             flex: FlexStyle::default(),
         }
     }

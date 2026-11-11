@@ -7,7 +7,7 @@ use fr_theme::colors::palette::Palette;
 
 use crate::toolbar::draw_icon::draw_icon;
 
-const CORNER: f32 = 8.0;
+const CORNER: f32 = 6.0;
 
 pub fn draw_icon_button(
     canvas: &mut Canvas,

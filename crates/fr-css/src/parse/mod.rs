@@ -2,6 +2,7 @@ pub mod declaration;
 pub mod parse_align_items;
 pub mod parse_background;
 pub mod parse_border;
+pub mod parse_border_radius;
 pub mod parse_box_sizing;
 pub mod parse_color;
 pub mod parse_color_text;

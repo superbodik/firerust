@@ -9,4 +9,5 @@ pub mod control_text_box;
 pub mod control_widths;
 pub mod label_of;
 pub mod label_width;
+pub mod mix_colors;
 pub mod place_control;

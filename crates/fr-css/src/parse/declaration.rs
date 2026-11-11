@@ -2,6 +2,7 @@ use fr_geom::color::rgba::Rgba;
 
 use crate::value::align_items::AlignItems;
 use crate::value::box_sizing::BoxSizing;
+use crate::value::corner::Corner;
 use crate::value::display::Display;
 use crate::value::flex_direction::FlexDirection;
 use crate::value::font_family::FontFamily;
@@ -34,6 +35,8 @@ pub enum Declaration {
     Padding(Side, Length),
     BorderWidth(Side, Length),
     BorderColor(Rgba),
+    AccentColor(Rgba),
+    BorderRadius(Corner, Length),
     FlexDirection(FlexDirection),
     FlexWrap(bool),
     JustifyContent(JustifyContent),

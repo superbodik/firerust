@@ -1,6 +1,7 @@
 use fr_css::value::edges::Edges;
 use fr_dom::node::node_id::NodeId;
 use fr_geom::color::rgba::Rgba;
+use fr_geom::geometry::corner_radii::CornerRadii;
 use fr_geom::geometry::rect::Rect;
 
 use crate::boxes::box_kind::BoxKind;
@@ -13,6 +14,7 @@ pub struct LayoutBox {
     pub border_width: Edges<f32>,
     pub border_color: Rgba,
     pub background: Rgba,
+    pub radii: CornerRadii,
     pub children: Vec<LayoutBox>,
 }
 
@@ -34,6 +36,7 @@ impl LayoutBox {
             border_width: Edges::uniform(0.0),
             border_color: Rgba::BLACK,
             background: Rgba::new(0, 0, 0, 0),
+            radii: CornerRadii::ZERO,
             children: Vec::new(),
         }
     }

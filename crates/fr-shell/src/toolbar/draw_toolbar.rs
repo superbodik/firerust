@@ -29,6 +29,8 @@ const FIELD_FONT_SIZE: f32 = 14.0;
 const BUTTON_ICON_SIZE: f32 = 16.0;
 const FIELD_ICON_SIZE: f32 = 14.0;
 const FOCUS_RING: f32 = 2.0;
+const FIELD_CORNER: f32 = 8.0;
+const HAIRLINE: f32 = 1.0;
 
 pub fn draw_toolbar(
     canvas: &mut Canvas,
@@ -105,7 +107,7 @@ fn draw_field(
         return;
     }
     let field = state.field;
-    let radius = rect.size.height / 2.0;
+    let radius = FIELD_CORNER;
     let is_hovered = matches!(
         state.hover,
         ChromeHover::Toolbar(ToolbarTarget::Address | ToolbarTarget::Star)
@@ -120,6 +122,8 @@ fn draw_field(
     fill_rounded_rect(canvas, rect, radius, background);
     if field.is_focused() {
         stroke_rounded_rect(canvas, rect, radius, FOCUS_RING, palette.accent);
+    } else {
+        stroke_rounded_rect(canvas, rect, radius, HAIRLINE, palette.field_border);
     }
     draw_icon(
         canvas,
@@ -131,7 +135,7 @@ fn draw_field(
     let star = star_rect(width);
     let star_hovered = state.hover == ChromeHover::Toolbar(ToolbarTarget::Star);
     if star_hovered {
-        fill_rounded_rect(canvas, star, star.size.width / 2.0, palette.button_hover);
+        fill_rounded_rect(canvas, star, 6.0, palette.button_hover);
     }
     let (star_icon, star_color) = if state.is_bookmarked {
         (Icon::StarFill, palette.star_on)

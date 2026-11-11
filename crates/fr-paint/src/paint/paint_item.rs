@@ -1,6 +1,8 @@
 use fr_geom::geometry::rect::Rect;
 use fr_raster::draw::draw_image::draw_image;
+use fr_raster::draw::fill_border_ring::fill_border_ring;
 use fr_raster::draw::fill_rect::fill_rect;
+use fr_raster::draw::fill_rounded_corners::fill_rounded_corners;
 use fr_raster::surface::canvas::Canvas;
 use fr_text::engine::text_engine::TextEngine;
 use fr_text::render::shape_runs::shape_runs;
@@ -16,6 +18,21 @@ pub fn paint_item(
 ) {
     match item {
         DisplayItem::Rect { color, .. } => fill_rect(canvas, destination, *color),
+        DisplayItem::RoundedRect { radii, color, .. } => {
+            fill_rounded_corners(canvas, destination, radii.scaled(scale), *color)
+        }
+        DisplayItem::Border {
+            radii,
+            widths,
+            color,
+            ..
+        } => fill_border_ring(
+            canvas,
+            destination,
+            radii.scaled(scale),
+            widths.map(|width| width * scale),
+            *color,
+        ),
         DisplayItem::Image { image, .. } => draw_image(
             canvas,
             destination,
