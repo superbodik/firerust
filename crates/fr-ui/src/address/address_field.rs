@@ -51,6 +51,27 @@ impl AddressField {
         self.caret += 1;
     }
 
+    pub fn paste(&mut self, text: &str) {
+        for character in text.chars() {
+            self.insert(character);
+        }
+    }
+
+    pub fn select_all(&mut self) {
+        self.selects_all = true;
+        self.caret = self.length();
+    }
+
+    pub fn copy_text(&self) -> Option<String> {
+        (self.selects_all && !self.text.is_empty()).then(|| self.text.clone())
+    }
+
+    pub fn cut_text(&mut self) -> Option<String> {
+        let copied = self.copy_text()?;
+        self.clear_selection();
+        Some(copied)
+    }
+
     pub fn backspace(&mut self) {
         if self.clear_selection() || self.caret == 0 {
             return;

@@ -30,10 +30,13 @@ pub enum Icon {
     Maximize,
     Restore,
     Fire,
+    ClockHistory,
+    Terminal,
+    Power,
 }
 
 impl Icon {
-    pub const ALL: [Icon; 30] = [
+    pub const ALL: [Icon; 33] = [
         Self::ArrowLeft,
         Self::ArrowRight,
         Self::ArrowClockwise,
@@ -64,6 +67,9 @@ impl Icon {
         Self::Maximize,
         Self::Restore,
         Self::Fire,
+        Self::ClockHistory,
+        Self::Terminal,
+        Self::Power,
     ];
 
     pub fn index(self) -> usize {
@@ -102,6 +108,9 @@ impl Icon {
             Self::Maximize => include_str!("../../icons/square.svg"),
             Self::Restore => include_str!("../../icons/window-stack.svg"),
             Self::Fire => include_str!("../../icons/fire.svg"),
+            Self::ClockHistory => include_str!("../../icons/clock-history.svg"),
+            Self::Terminal => include_str!("../../icons/terminal.svg"),
+            Self::Power => include_str!("../../icons/power.svg"),
         }
     }
 }

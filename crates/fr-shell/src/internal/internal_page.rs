@@ -6,6 +6,7 @@ use fr_bookmarks::import::import_from_browser::import_from_browser;
 use fr_bookmarks::import::import_from_file::import_from_file;
 use fr_bookmarks::model::bookmark::Bookmark;
 use fr_bookmarks::storage::bookmark_book::BookmarkBook;
+use fr_download::record::download_log::recent_downloads;
 use fr_js::log::console_log::{clear_console_lines, recent_console_lines};
 use fr_page::load::blank_page::blank_page_for;
 use fr_page::load::build_page::build_page;
@@ -13,36 +14,43 @@ use fr_page::load::error_page::error_page_for;
 use fr_page::load::page::Page;
 use fr_passwords::import::import_password_file::import_password_file;
 use fr_passwords::storage::password_vault::PasswordVault;
-use fr_settings::model::settings::Settings;
 use fr_theme::colors::palette_for::palette_for;
-use fr_theme::kind::theme_kind::ThemeKind;
 use fr_theme::page::internal_css::internal_css;
 use url::Url;
 
 use crate::internal::bookmarks_page::bookmarks_page;
 use crate::internal::console_page::console_page;
+use crate::internal::downloads_page::downloads_page;
+use crate::internal::history_page::history_page;
 use crate::internal::import_page::import_page;
 use crate::internal::import_passwords_page::{
     import_passwords_page, passwords_failed_page, passwords_imported_page,
 };
 use crate::internal::import_result_page::{import_failed_page, imported_page};
+use crate::internal::internal_context::InternalContext;
 use crate::internal::menu_page::menu_page;
 use crate::internal::passwords_page::passwords_page;
 use crate::internal::query_value::query_value;
 use crate::internal::settings_page::settings_page;
 
-pub fn internal_page(
-    url: &Url,
-    book: &mut BookmarkBook,
-    vault: &mut PasswordVault,
-    settings: &Settings,
-    is_theme_forced: bool,
-    theme: ThemeKind,
-) -> Option<Page> {
+pub fn internal_page(url: &Url, context: &mut InternalContext<'_>) -> Option<Page> {
+    let theme = context.theme;
+    let settings = context.settings;
+    let is_theme_forced = context.is_theme_forced;
+    let book = &mut *context.bookmarks;
+    let vault = &mut *context.vault;
     let css = internal_css(palette_for(theme));
     match url.path() {
         "blank" => blank_page_for(theme),
         "menu" => Some(build_page(&menu_page(&css), url.clone())),
+        "history" => Some(build_page(
+            &history_page(context.visited, &css),
+            url.clone(),
+        )),
+        "downloads" => Some(build_page(
+            &downloads_page(&recent_downloads(), &css),
+            url.clone(),
+        )),
         "settings" => Some(build_page(
             &settings_page(settings, is_theme_forced, &css),
             url.clone(),

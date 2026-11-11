@@ -1,5 +1,6 @@
 use serde_json::Value;
 
+use crate::model::search_engine::SearchEngine;
 use crate::model::settings::Settings;
 use crate::model::theme_choice::ThemeChoice;
 
@@ -10,5 +11,10 @@ pub fn decode_settings(text: &str) -> Option<Settings> {
         .and_then(Value::as_str)
         .and_then(ThemeChoice::from_key)
         .unwrap_or_default();
-    Some(Settings { theme })
+    let search = document
+        .get("search")
+        .and_then(Value::as_str)
+        .and_then(SearchEngine::from_key)
+        .unwrap_or_default();
+    Some(Settings { theme, search })
 }

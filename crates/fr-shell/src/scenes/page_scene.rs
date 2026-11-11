@@ -2,6 +2,9 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use fr_bookmarks::storage::bookmark_book::{BookmarkBook, BookmarkChange};
+use fr_clipboard::text::clean_pasted_text::clean_pasted_text;
+use fr_clipboard::text::read_text::read_text;
+use fr_clipboard::text::write_text::write_text;
 use fr_dom::node::node_id::NodeId;
 use fr_geom::color::rgba::Rgba;
 use fr_geom::geometry::point::Point;
@@ -29,6 +32,7 @@ use fr_passwords::storage::password_vault::PasswordVault;
 use fr_raster::draw::clear::clear;
 use fr_raster::draw::fill_rounded_rect::fill_rounded_rect;
 use fr_raster::surface::canvas::Canvas;
+use fr_settings::model::search_engine::SearchEngine;
 use fr_settings::model::settings::Settings;
 use fr_settings::model::theme_choice::ThemeChoice;
 use fr_settings::storage::load_settings::load_settings;
@@ -46,6 +50,11 @@ use fr_ui::address::address_outcome::AddressOutcome;
 use fr_ui::address::apply_address_key::apply_address_key;
 use fr_ui::hover::chrome_hover::ChromeHover;
 use fr_ui::hover::hover_chrome::hover_chrome;
+use fr_ui::menu::hit_menu::hit_menu;
+use fr_ui::menu::menu_hit::MenuHit;
+use fr_ui::menu::menu_kind::MenuKind;
+use fr_ui::menu::menu_target::MenuTarget;
+use fr_ui::menu::start_button_rect::start_button_rect;
 use fr_ui::scroll::scroll_metrics::ScrollMetrics;
 use fr_ui::scroll::scroll_state::ScrollState;
 use fr_ui::scroll::scrollbar_thumb::scrollbar_thumb;
@@ -63,6 +72,7 @@ use fr_window::scene::render_scene::RenderScene;
 use fr_window::scene::scene_reaction::SceneReaction;
 use url::Url;
 
+use crate::internal::internal_context::InternalContext;
 use crate::internal::internal_page::internal_page;
 use crate::internal::query_value::query_value;
 use crate::scenes::address_text::address_text;
@@ -81,6 +91,7 @@ use crate::scenes::form_for::form_for;
 use crate::scenes::form_request::form_request;
 use crate::scenes::invalidate_layout::invalidate_layout;
 use crate::scenes::launch_external::launch_external;
+use crate::scenes::launch_new_window::launch_new_window;
 use crate::scenes::link_target::link_target;
 use crate::scenes::load_target::LoadTarget;
 use crate::scenes::login_to_save::login_to_save;
@@ -97,7 +108,9 @@ use crate::scenes::zoom_key::zoom_key;
 use crate::toolbar::draw_link_status::draw_link_status;
 use crate::toolbar::draw_load_bar::draw_load_bar;
 use crate::toolbar::draw_memory_bar::{MEMORY_BAR_HEIGHT, draw_memory_bar};
+use crate::toolbar::draw_menu_popup::{MenuView, draw_menu_popup};
 use crate::toolbar::draw_notice::draw_notice;
+use crate::toolbar::draw_start_button::draw_start_button;
 use crate::toolbar::draw_tab_strip::draw_tab_strip;
 use crate::toolbar::draw_toolbar::draw_toolbar;
 use crate::toolbar::security_badge::SecurityBadge;
@@ -111,6 +124,7 @@ const LOAD_POLL: Duration = Duration::from_millis(33);
 const NOTICE_LIFETIME: Duration = Duration::from_secs(3);
 const SAVE_PROMPT_LIFETIME: Duration = Duration::from_secs(10);
 const DOWNLOAD_NOTICE_LIFETIME: Duration = Duration::from_secs(6);
+const MAX_VISITED: usize = 300;
 
 pub struct PageScene {
     tabs: TabSet,
@@ -140,6 +154,9 @@ pub struct PageScene {
     pending_fragment: Option<String>,
     hovered_link: Option<String>,
     logs_frames: bool,
+    popup: Option<MenuKind>,
+    popup_hover: Option<MenuTarget>,
+    start_hover: bool,
 }
 
 impl PageScene {
@@ -178,6 +195,9 @@ impl PageScene {
             pending_fragment: None,
             hovered_link: None,
             logs_frames: std::env::var_os("FIRERUST_FRAME_LOG").is_some(),
+            popup: None,
+            popup_hover: None,
+            start_hover: false,
         };
         if scene.theme != ThemeKind::Light {
             scene.rebuild_internal_pages();
@@ -186,7 +206,7 @@ impl PageScene {
     }
 
     pub fn open_first(&mut self, input: &str) {
-        if let Some(request) = request_for(input) {
+        if let Some(request) = request_for(input, self.settings.search) {
             self.begin_request(request, LoadTarget::Initial);
         }
     }
@@ -220,6 +240,8 @@ impl PageScene {
         self.pending_scroll = Some(scroll);
         self.is_over_link = false;
         self.hovered_link = None;
+        self.popup = None;
+        self.popup_hover = None;
         self.form.forget();
         self.pending_fragment = if scroll <= 0.0 {
             self.tabs.active().url().fragment().map(percent_decode)
@@ -261,17 +283,26 @@ impl PageScene {
     }
 
     fn begin_request(&mut self, request: Request, target: LoadTarget) {
+        if request.url.scheme() == "about" && request.url.path() == "search" {
+            let typed = query_value(&request.url, "q").unwrap_or_default();
+            if let Some(search) = request_for(&typed, self.settings.search) {
+                self.begin_request(search, target);
+            }
+            return;
+        }
         if request.url.scheme() == "about" {
             self.pending = None;
             self.apply_requested_settings(&request.url);
-            if let Some(page) = internal_page(
-                &request.url,
-                &mut self.bookmarks,
-                &mut self.vault,
-                &self.settings,
-                self.forced_theme.is_some(),
-                self.theme,
-            ) {
+            let visited = self.visited_urls();
+            let mut context = InternalContext {
+                bookmarks: &mut self.bookmarks,
+                vault: &mut self.vault,
+                settings: &self.settings,
+                is_theme_forced: self.forced_theme.is_some(),
+                theme: self.theme,
+                visited: &visited,
+            };
+            if let Some(page) = internal_page(&request.url, &mut context) {
                 self.apply_page(page, target);
             }
             return;
@@ -282,7 +313,7 @@ impl PageScene {
     }
 
     fn open(&mut self, input: &str) -> SceneReaction {
-        self.open_request(request_for(input))
+        self.open_request(request_for(input, self.settings.search))
     }
 
     fn open_request(&mut self, request: Option<Request>) -> SceneReaction {
@@ -492,6 +523,22 @@ impl PageScene {
         SceneReaction::DragWindow
     }
 
+    fn visited_urls(&self) -> Vec<String> {
+        let mut seen: Vec<String> = Vec::new();
+        for tab in self.tabs.tabs() {
+            for entry in tab.history().entries().iter().rev() {
+                let text = entry.url.to_string();
+                if entry.url.scheme() != "about" && !seen.contains(&text) {
+                    seen.push(text);
+                }
+                if seen.len() >= MAX_VISITED {
+                    return seen;
+                }
+            }
+        }
+        seen
+    }
+
     fn rebuild_internal_pages(&mut self) {
         let internal: Vec<(usize, Url)> = self
             .tabs
@@ -502,14 +549,16 @@ impl PageScene {
             .map(|(index, tab)| (index, tab.url().clone()))
             .collect();
         for (index, url) in internal {
-            let Some(page) = internal_page(
-                &url,
-                &mut self.bookmarks,
-                &mut self.vault,
-                &self.settings,
-                self.forced_theme.is_some(),
-                self.theme,
-            ) else {
+            let visited = self.visited_urls();
+            let mut context = InternalContext {
+                bookmarks: &mut self.bookmarks,
+                vault: &mut self.vault,
+                settings: &self.settings,
+                is_theme_forced: self.forced_theme.is_some(),
+                theme: self.theme,
+                visited: &visited,
+            };
+            let Some(page) = internal_page(&url, &mut context) else {
                 continue;
             };
             if let Some(tab) = self.tabs.tab_mut(index) {
@@ -566,8 +615,103 @@ impl PageScene {
         )
     }
 
+    fn canvas_height(&self) -> f32 {
+        self.viewport_height + CHROME_HEIGHT
+    }
+
+    fn is_start_page(&self) -> bool {
+        self.tabs.active().url().as_str() == "about:blank"
+    }
+
+    fn click_popup(&mut self, point: Point) -> Option<SceneReaction> {
+        let height = self.canvas_height();
+        if let Some(kind) = self.popup {
+            return Some(match hit_menu(kind, point, self.viewport_width, height) {
+                MenuHit::Target(target) => self.run_menu(target),
+                MenuHit::Inert => SceneReaction::Idle,
+                MenuHit::Outside => {
+                    self.popup = None;
+                    self.popup_hover = None;
+                    SceneReaction::Redraw
+                }
+            });
+        }
+        if self.is_start_page() && start_button_rect(height).contains(point) {
+            self.popup = Some(MenuKind::Start);
+            return Some(SceneReaction::Redraw);
+        }
+        None
+    }
+
+    fn toggle_main_menu(&mut self) -> SceneReaction {
+        self.popup = match self.popup {
+            Some(MenuKind::Main) => None,
+            _ => Some(MenuKind::Main),
+        };
+        self.popup_hover = None;
+        SceneReaction::Redraw
+    }
+
+    fn run_menu(&mut self, target: MenuTarget) -> SceneReaction {
+        if !matches!(
+            target,
+            MenuTarget::ZoomIn | MenuTarget::ZoomOut | MenuTarget::ZoomReset
+        ) {
+            self.popup = None;
+            self.popup_hover = None;
+        }
+        match target {
+            MenuTarget::NewTab => self.new_tab(),
+            MenuTarget::NewWindow => self.open_new_window(),
+            MenuTarget::History => self.open("about:history"),
+            MenuTarget::Bookmarks => self.open_bookmarks(),
+            MenuTarget::Downloads => self.open("about:downloads"),
+            MenuTarget::Passwords => self.open_passwords(),
+            MenuTarget::Settings => self.open("about:settings"),
+            MenuTarget::Console => self.open("about:console"),
+            MenuTarget::Pages => self.open("about:menu"),
+            MenuTarget::Exit => SceneReaction::CloseWindow,
+            MenuTarget::ZoomIn => self.change_zoom(ZoomLevel::zoom_in),
+            MenuTarget::ZoomOut => self.change_zoom(ZoomLevel::zoom_out),
+            MenuTarget::ZoomReset => self.change_zoom(|_| ZoomLevel::new()),
+        }
+    }
+
+    fn open_new_window(&mut self) -> SceneReaction {
+        let message = match launch_new_window() {
+            Ok(()) => "Opening a new window",
+            Err(error) => {
+                eprintln!("cannot open a new window: {error}");
+                "Cannot open a new window"
+            }
+        };
+        self.notice = Some(Notice::new(message, NOTICE_LIFETIME));
+        SceneReaction::Redraw
+    }
+
+    fn update_popup_hover(&mut self, point: Point) -> bool {
+        let height = self.canvas_height();
+        let (hover, start) = match self.popup {
+            Some(kind) => match hit_menu(kind, point, self.viewport_width, height) {
+                MenuHit::Target(target) => (Some(target), false),
+                _ => (None, false),
+            },
+            None => (
+                None,
+                self.is_start_page() && start_button_rect(height).contains(point),
+            ),
+        };
+        let changed = hover != self.popup_hover || start != self.start_hover;
+        self.popup_hover = hover;
+        self.start_hover = start;
+        changed
+    }
+
     fn click(&mut self, x: f32, y: f32) -> SceneReaction {
         let point = Point::new(x, y);
+        if let Some(reaction) = self.click_popup(point) {
+            return reaction;
+        }
         let count = self.tabs.len();
         if let Some(target) = hit_tab_strip(point, count, self.viewport_width) {
             return match target {
@@ -586,7 +730,7 @@ impl PageScene {
                 ToolbarTarget::Forward => self.travel(true),
                 ToolbarTarget::Reload => self.reload_or_stop(),
                 ToolbarTarget::Star => self.toggle_bookmark(),
-                ToolbarTarget::Menu => self.open("about:menu"),
+                ToolbarTarget::Menu => self.toggle_main_menu(),
                 ToolbarTarget::Address => {
                     self.address.focus();
                     SceneReaction::Redraw
@@ -643,11 +787,17 @@ impl PageScene {
         if url.path() != "settings" {
             return;
         }
-        let Some(choice) = query_value(url, "theme").and_then(|key| ThemeChoice::from_key(&key))
-        else {
+        let theme = query_value(url, "theme").and_then(|key| ThemeChoice::from_key(&key));
+        let search = query_value(url, "search").and_then(|key| SearchEngine::from_key(&key));
+        if theme.is_none() && search.is_none() {
             return;
-        };
-        self.settings.theme = choice;
+        }
+        if let Some(choice) = theme {
+            self.settings.theme = choice;
+        }
+        if let Some(engine) = search {
+            self.settings.search = engine;
+        }
         if let Some(path) = settings_path()
             && let Err(error) = save_settings(&path, &self.settings)
         {
@@ -657,6 +807,14 @@ impl PageScene {
     }
 
     fn secondary_click(&mut self, x: f32, y: f32) -> SceneReaction {
+        let count = self.tabs.len();
+        match hit_tab_strip(Point::new(x, y), count, self.viewport_width) {
+            Some(TabStripTarget::Tab(index) | TabStripTarget::Close(index)) => {
+                return self.close_tab(index);
+            }
+            Some(_) => return SceneReaction::Idle,
+            None => {}
+        }
         match self.target_at(x, y) {
             Some(action) => self.follow_link(action, true),
             None => SceneReaction::Idle,
@@ -731,7 +889,74 @@ impl PageScene {
         SceneReaction::Redraw
     }
 
+    fn clipboard_key(&mut self, key: KeyInput) -> SceneReaction {
+        if self.address.is_focused() {
+            return self.clipboard_in_address(key);
+        }
+        if self.form.control().is_none() {
+            return SceneReaction::Idle;
+        }
+        match key {
+            KeyInput::Paste => {
+                let Some(text) = read_text() else {
+                    return SceneReaction::Idle;
+                };
+                if self.form.paste(&mut self.tabs, &clean_pasted_text(&text)) {
+                    refresh_active(&mut self.tabs);
+                    return SceneReaction::Redraw;
+                }
+            }
+            KeyInput::Copy | KeyInput::Cut => {
+                if let Some(text) = self.form.current_text() {
+                    write_text(&text);
+                }
+            }
+            _ => {}
+        }
+        SceneReaction::Idle
+    }
+
+    fn clipboard_in_address(&mut self, key: KeyInput) -> SceneReaction {
+        match key {
+            KeyInput::Paste => {
+                let Some(text) = read_text() else {
+                    return SceneReaction::Idle;
+                };
+                self.address.paste(&clean_pasted_text(&text));
+                SceneReaction::Redraw
+            }
+            KeyInput::Copy => {
+                if let Some(text) = self.address.copy_text() {
+                    write_text(&text);
+                }
+                SceneReaction::Idle
+            }
+            KeyInput::Cut => match self.address.cut_text() {
+                Some(text) => {
+                    write_text(&text);
+                    SceneReaction::Redraw
+                }
+                None => SceneReaction::Idle,
+            },
+            _ => {
+                self.address.select_all();
+                SceneReaction::Redraw
+            }
+        }
+    }
+
     fn press(&mut self, key: KeyInput) -> SceneReaction {
+        if key == KeyInput::Escape && self.popup.is_some() {
+            self.popup = None;
+            self.popup_hover = None;
+            return SceneReaction::Redraw;
+        }
+        if matches!(
+            key,
+            KeyInput::Paste | KeyInput::Copy | KeyInput::Cut | KeyInput::SelectAll
+        ) {
+            return self.clipboard_key(key);
+        }
         if self.address.is_focused() {
             match apply_address_key(&mut self.address, key) {
                 AddressOutcome::Edited => return SceneReaction::Redraw,
@@ -777,6 +1002,9 @@ impl PageScene {
                 SceneReaction::Redraw
             }
             KeyInput::NewTab => self.new_tab(),
+            KeyInput::NewWindow => self.open_new_window(),
+            KeyInput::OpenHistory => self.open("about:history"),
+            KeyInput::OpenDownloads => self.open("about:downloads"),
             KeyInput::CloseTab => self.close_tab(active),
             KeyInput::NextTab => self.switch_to((active + 1) % count),
             KeyInput::PreviousTab => self.switch_to((active + count - 1) % count),
@@ -992,6 +1220,18 @@ impl RenderScene for PageScene {
                 lift,
             );
         }
+        if self.is_start_page() {
+            let is_lit = self.start_hover || self.popup == Some(MenuKind::Start);
+            draw_start_button(canvas, &mut self.text_engine, palette, is_lit);
+        }
+        if let Some(kind) = self.popup {
+            let view = MenuView {
+                kind,
+                hover: self.popup_hover,
+                zoom_percent: u32::from(self.zoom().percent()),
+            };
+            draw_menu_popup(canvas, &mut self.text_engine, palette, &view);
+        }
         if self.logs_frames {
             eprintln!(
                 "frame {:.1} ms (layout {:.1}, page {:.1})",
@@ -1022,7 +1262,8 @@ impl RenderScene for PageScene {
             InputEvent::Press { x, y } => self.press_at(x, y),
             InputEvent::PointerMoved { x, y } => {
                 let hover = hover_chrome(Point::new(x, y), self.tabs.len(), self.viewport_width);
-                let hover_changed = hover != self.hover;
+                let popup_changed = self.update_popup_hover(Point::new(x, y));
+                let hover_changed = hover != self.hover || popup_changed;
                 self.hover = hover;
                 let over_chrome_button = !matches!(
                     hover,
@@ -1036,8 +1277,11 @@ impl RenderScene for PageScene {
                 let hovered_link = link.as_ref().map(LinkAction::hover_text);
                 let link_changed = hovered_link != self.hovered_link;
                 self.hovered_link = hovered_link;
-                self.is_over_link =
-                    over_chrome_button || link.is_some() || self.is_over_clickable_control(x, y);
+                self.is_over_link = over_chrome_button
+                    || link.is_some()
+                    || self.popup_hover.is_some()
+                    || self.start_hover
+                    || self.is_over_clickable_control(x, y);
                 if hover_changed || link_changed {
                     SceneReaction::Redraw
                 } else {

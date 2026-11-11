@@ -8,6 +8,7 @@ version = "0.0.1"
 publish = false
 
 [workspace.dependencies]
+arboard = { version = "3.7.0", default-features = false }
 brotli = "9.1.1"
 cosmic-text = "0.19.0"
 cssparser = "0.38.0"
@@ -29,6 +30,7 @@ fr-bookmarks = { version = "0.0.1", path = "crates/fr-bookmarks" }
 fr-dpapi = { version = "0.0.1", path = "crates/fr-dpapi" }
 fr-passwords = { version = "0.0.1", path = "crates/fr-passwords" }
 fr-cache = { version = "0.0.1", path = "crates/fr-cache" }
+fr-clipboard = { version = "0.0.1", path = "crates/fr-clipboard" }
 fr-css = { version = "0.0.1", path = "crates/fr-css" }
 fr-download = { version = "0.0.1", path = "crates/fr-download" }
 fr-dom = { version = "0.0.1", path = "crates/fr-dom" }

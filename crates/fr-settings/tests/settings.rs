@@ -1,5 +1,6 @@
 use std::fs;
 
+use fr_settings::model::search_engine::SearchEngine;
 use fr_settings::model::settings::Settings;
 use fr_settings::model::theme_choice::ThemeChoice;
 use fr_settings::storage::decode_settings::decode_settings;
@@ -35,6 +36,7 @@ fn keys_and_labels_round_trip() {
 fn settings_survive_encoding() {
     let settings = Settings {
         theme: ThemeChoice::Dark,
+        search: SearchEngine::Bing,
     };
 
     assert_eq!(decode_settings(&encode_settings(&settings)), Some(settings));
@@ -54,6 +56,7 @@ fn saving_and_loading_use_a_file() {
     let path = scratch_file("file");
     let settings = Settings {
         theme: ThemeChoice::Light,
+        search: SearchEngine::Google,
     };
 
     save_settings(&path, &settings).expect("saved");
@@ -72,4 +75,45 @@ fn a_missing_or_broken_file_gives_the_default() {
     fs::write(&broken, "{{{").expect("written");
     assert_eq!(load_settings(&broken), Settings::default());
     let _ = fs::remove_dir_all(broken.parent().expect("parent"));
+}
+
+#[test]
+fn the_default_search_engine_works_without_scripts() {
+    assert_eq!(Settings::default().search, SearchEngine::DuckDuckGo);
+}
+
+#[test]
+fn search_engine_keys_round_trip() {
+    for engine in SearchEngine::ALL {
+        assert_eq!(SearchEngine::from_key(engine.key()), Some(engine));
+        assert!(!engine.label().is_empty());
+        assert!(!engine.hint().is_empty());
+    }
+    assert_eq!(SearchEngine::from_key("altavista"), None);
+}
+
+#[test]
+fn a_query_is_encoded_into_the_engine_address() {
+    assert_eq!(
+        SearchEngine::DuckDuckGo.query_url("rust lang & more"),
+        "https://html.duckduckgo.com/html/?q=rust+lang+%26+more"
+    );
+    assert_eq!(
+        SearchEngine::Google.query_url("  рубль "),
+        "https://www.google.com/search?q=%D1%80%D1%83%D0%B1%D0%BB%D1%8C"
+    );
+    assert!(SearchEngine::Yandex.query_url("x").contains("text=x"));
+    assert!(
+        SearchEngine::Bing
+            .query_url("x")
+            .starts_with("https://www.bing.com/")
+    );
+}
+
+#[test]
+fn an_old_settings_file_without_a_search_key_still_loads() {
+    let settings = decode_settings("{\"theme\": \"dark\"}").expect("decoded");
+
+    assert_eq!(settings.theme, ThemeChoice::Dark);
+    assert_eq!(settings.search, SearchEngine::DuckDuckGo);
 }

@@ -1197,6 +1197,57 @@
   global.MouseEvent = MouseEvent;
   global.KeyboardEvent = KeyboardEvent;
   global.EventTarget = EventTarget;
+  global.Image = function (width, height) {
+    var element = theDocument.createElement('img');
+    if (width !== undefined) {
+      element.setAttribute('width', String(width));
+    }
+    if (height !== undefined) {
+      element.setAttribute('height', String(height));
+    }
+    return element;
+  };
+  function MessagePort() {
+    this.onmessage = null;
+    this.peer = null;
+    this.listeners = [];
+  }
+  MessagePort.prototype.postMessage = function (data) {
+    var peer = this.peer;
+    if (!peer) {
+      return;
+    }
+    setTimeout(function () {
+      var event = { type: 'message', data: data, target: peer };
+      if (typeof peer.onmessage === 'function') {
+        peer.onmessage(event);
+      }
+      peer.listeners.slice().forEach(function (listener) {
+        listener(event);
+      });
+    }, 0);
+  };
+  MessagePort.prototype.addEventListener = function (type, listener) {
+    if (type === 'message') {
+      this.listeners.push(listener);
+    }
+  };
+  MessagePort.prototype.removeEventListener = function (type, listener) {
+    this.listeners = this.listeners.filter(function (item) {
+      return item !== listener;
+    });
+  };
+  MessagePort.prototype.start = function () {};
+  MessagePort.prototype.close = function () {
+    this.peer = null;
+  };
+  global.MessagePort = MessagePort;
+  global.MessageChannel = function () {
+    this.port1 = new MessagePort();
+    this.port2 = new MessagePort();
+    this.port1.peer = this.port2;
+    this.port2.peer = this.port1;
+  };
   global.Node = Node;
   global.Element = Element;
   global.HTMLElement = HTMLElement;

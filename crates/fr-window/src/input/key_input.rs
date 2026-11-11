@@ -31,4 +31,11 @@ pub enum KeyInput {
     OpenPasswords,
     FocusNext,
     FocusPrevious,
+    Paste,
+    Copy,
+    Cut,
+    SelectAll,
+    NewWindow,
+    OpenHistory,
+    OpenDownloads,
 }

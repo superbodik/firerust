@@ -69,6 +69,19 @@ impl FormFocus {
         true
     }
 
+    pub fn paste(&mut self, tabs: &mut TabSet, text: &str) -> bool {
+        let mut inserted = false;
+        for character in text.chars() {
+            inserted |= self.type_char(tabs, character);
+        }
+        inserted
+    }
+
+    pub fn current_text(&self) -> Option<String> {
+        self.control?;
+        Some(self.field.text().to_owned())
+    }
+
     pub fn press(&mut self, tabs: &mut TabSet, key: KeyInput) -> FocusKey {
         let Some(control) = self.control else {
             return FocusKey::Ignored;

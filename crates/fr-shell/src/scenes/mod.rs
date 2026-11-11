@@ -14,6 +14,7 @@ pub mod form_for;
 pub mod form_request;
 pub mod invalidate_layout;
 pub mod launch_external;
+pub mod launch_new_window;
 pub mod link_target;
 pub mod load_target;
 pub mod login_to_save;

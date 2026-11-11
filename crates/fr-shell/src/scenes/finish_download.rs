@@ -1,3 +1,4 @@
+use fr_download::record::download_log::remember_download;
 use fr_download::save::downloads_folder::downloads_folder;
 use fr_download::save::save_download::save_download;
 use fr_net::load::response::Response;
@@ -8,6 +9,7 @@ pub fn finish_download(response: &Response, requested_from_disk: bool) -> String
     }
     match save_download(response, &downloads_folder()) {
         Ok(path) => {
+            remember_download(&path, response.body.len());
             let name = path
                 .file_name()
                 .and_then(|name| name.to_str())

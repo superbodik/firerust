@@ -17,6 +17,10 @@ impl NavigationHistory {
         self.entries.get(self.position)
     }
 
+    pub fn entries(&self) -> &[HistoryEntry] {
+        &self.entries
+    }
+
     pub fn len(&self) -> usize {
         self.entries.len()
     }

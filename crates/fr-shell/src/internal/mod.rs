@@ -1,9 +1,12 @@
 pub mod bookmarks_page;
 pub mod console_page;
+pub mod downloads_page;
 pub mod group_html;
+pub mod history_page;
 pub mod import_page;
 pub mod import_passwords_page;
 pub mod import_result_page;
+pub mod internal_context;
 pub mod internal_page;
 pub mod keys_html;
 pub mod menu_page;

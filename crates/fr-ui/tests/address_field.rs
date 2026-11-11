@@ -153,3 +153,64 @@ fn blurring_keeps_the_text() {
     assert!(!field.is_focused());
     assert_eq!(field.text(), "abc");
 }
+
+#[test]
+fn pasting_inserts_the_text_at_the_caret() {
+    let mut field = AddressField::new();
+    field.set_text("abef");
+    field.move_home();
+    field.move_right();
+    field.move_right();
+
+    field.paste("cd");
+
+    assert_eq!(field.text(), "abcdef");
+    assert_eq!(field.caret(), 4);
+}
+
+#[test]
+fn pasting_over_a_selection_replaces_everything() {
+    let mut field = AddressField::new();
+    field.set_text("old address");
+    field.focus();
+
+    field.paste("new");
+
+    assert_eq!(field.text(), "new");
+    assert!(!field.selects_all());
+}
+
+#[test]
+fn select_all_marks_the_whole_text() {
+    let mut field = AddressField::new();
+    field.set_text("text");
+    field.move_home();
+
+    field.select_all();
+
+    assert!(field.selects_all());
+    assert_eq!(field.caret(), 4);
+}
+
+#[test]
+fn copy_needs_a_selection_and_leaves_the_text_alone() {
+    let mut field = AddressField::new();
+    field.set_text("example.com");
+    assert_eq!(field.copy_text(), None);
+
+    field.select_all();
+
+    assert_eq!(field.copy_text().as_deref(), Some("example.com"));
+    assert_eq!(field.text(), "example.com");
+}
+
+#[test]
+fn cut_returns_the_selection_and_empties_the_field() {
+    let mut field = AddressField::new();
+    field.set_text("example.com");
+    field.select_all();
+
+    assert_eq!(field.cut_text().as_deref(), Some("example.com"));
+    assert_eq!(field.text(), "");
+    assert_eq!(field.cut_text(), None);
+}
