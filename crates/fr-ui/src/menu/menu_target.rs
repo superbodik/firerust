@@ -12,5 +12,7 @@ pub enum MenuTarget {
     Settings,
     Console,
     Pages,
+    Reader,
+    PlainStyles,
     Exit,
 }

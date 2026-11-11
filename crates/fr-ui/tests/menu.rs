@@ -82,6 +82,8 @@ fn every_main_item_is_reachable() {
         MenuTarget::Bookmarks,
         MenuTarget::Downloads,
         MenuTarget::Passwords,
+        MenuTarget::Reader,
+        MenuTarget::PlainStyles,
         MenuTarget::Settings,
         MenuTarget::Console,
         MenuTarget::Pages,

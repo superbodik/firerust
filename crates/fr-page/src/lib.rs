@@ -2,6 +2,7 @@ pub mod images;
 pub mod link;
 pub mod load;
 pub mod prefetch;
+pub mod reader;
 pub mod script;
 pub mod style;
 pub mod text;

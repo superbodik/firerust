@@ -14,6 +14,7 @@ pub struct Tab {
     scroll: f32,
     history: NavigationHistory,
     content: Option<TabContent>,
+    reader_original: Option<TabContent>,
     last_used: u64,
 }
 
@@ -28,6 +29,7 @@ impl Tab {
             scroll: 0.0,
             history,
             content: Some(TabContent::from_page(page)),
+            reader_original: None,
             last_used,
         }
     }
@@ -85,9 +87,33 @@ impl Tab {
 
     pub fn discard(&mut self) {
         self.content = None;
+        self.reader_original = None;
+    }
+
+    pub fn is_reading(&self) -> bool {
+        self.reader_original.is_some()
+    }
+
+    pub fn enter_reader(&mut self, page: Page) -> bool {
+        let Some(original) = self.content.take() else {
+            return false;
+        };
+        self.reader_original = Some(original);
+        self.title = page.title.clone();
+        self.content = Some(TabContent::from_page(page));
+        true
+    }
+
+    pub fn leave_reader(&mut self) -> bool {
+        let Some(original) = self.reader_original.take() else {
+            return false;
+        };
+        self.content = Some(original);
+        true
     }
 
     pub fn show(&mut self, page: Page) {
+        self.reader_original = None;
         self.url = page.url.clone();
         self.title = page.title.clone();
         self.content = Some(TabContent::from_page(page));
@@ -98,6 +124,7 @@ impl Tab {
     }
 
     pub fn restore(&mut self, page: Page) {
+        self.reader_original = None;
         self.title = page.title.clone();
         self.content = Some(TabContent::from_page(page));
     }

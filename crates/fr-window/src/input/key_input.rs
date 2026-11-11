@@ -38,4 +38,5 @@ pub enum KeyInput {
     NewWindow,
     OpenHistory,
     OpenDownloads,
+    ToggleReader,
 }

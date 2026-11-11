@@ -17,6 +17,7 @@ pub fn translate_key(
         Key::Named(NamedKey::ArrowRight) if modifiers.alt_key() => Some(KeyInput::GoForward),
         Key::Named(NamedKey::F5) => Some(KeyInput::Reload),
         Key::Named(NamedKey::F6) => Some(KeyInput::FocusAddress),
+        Key::Named(NamedKey::F9) => Some(KeyInput::ToggleReader),
         Key::Named(NamedKey::Tab) if modifiers.control_key() && modifiers.shift_key() => {
             Some(KeyInput::PreviousTab)
         }

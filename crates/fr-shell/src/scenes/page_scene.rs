@@ -25,6 +25,7 @@ use fr_page::load::build_page::build_prefetched;
 use fr_page::load::error_page::error_page_for;
 use fr_page::load::page::Page;
 use fr_page::prefetch::fetched::Fetched;
+use fr_page::reader::build_reader_page::build_reader_page;
 use fr_paint::build::build_display_list::build_display_list;
 use fr_paint::paint::paint_display_list::paint_display_list;
 use fr_passwords::model::credential::Credential;
@@ -670,11 +671,59 @@ impl PageScene {
             MenuTarget::Settings => self.open("about:settings"),
             MenuTarget::Console => self.open("about:console"),
             MenuTarget::Pages => self.open("about:menu"),
+            MenuTarget::Reader => self.toggle_reader(),
+            MenuTarget::PlainStyles => self.toggle_plain_styles(),
             MenuTarget::Exit => SceneReaction::CloseWindow,
             MenuTarget::ZoomIn => self.change_zoom(ZoomLevel::zoom_in),
             MenuTarget::ZoomOut => self.change_zoom(ZoomLevel::zoom_out),
             MenuTarget::ZoomReset => self.change_zoom(|_| ZoomLevel::new()),
         }
+    }
+
+    fn toggle_reader(&mut self) -> SceneReaction {
+        self.popup = None;
+        self.popup_hover = None;
+        if self.tabs.active().is_reading() {
+            let scroll = self.tabs.active().scroll();
+            self.tabs.active_mut().leave_reader();
+            self.after_navigation(scroll);
+            return SceneReaction::Redraw;
+        }
+        let url = self.tabs.active().url().clone();
+        let theme = self.theme;
+        let page = self
+            .tabs
+            .active()
+            .content()
+            .and_then(|content| build_reader_page(&content.document.borrow(), &url, theme));
+        let Some(page) = page else {
+            self.notice = Some(Notice::new(
+                "This page has no article to show in reader view",
+                NOTICE_LIFETIME,
+            ));
+            return SceneReaction::Redraw;
+        };
+        self.remember_scroll();
+        self.tabs.active_mut().enter_reader(page);
+        self.after_navigation(0.0);
+        SceneReaction::Redraw
+    }
+
+    fn toggle_plain_styles(&mut self) -> SceneReaction {
+        self.popup = None;
+        self.popup_hover = None;
+        let Some(content) = self.tabs.active_mut().content_mut() else {
+            return SceneReaction::Idle;
+        };
+        if content.is_plain {
+            return self.reload();
+        }
+        content.apply_plain_styles();
+        self.notice = Some(Notice::new(
+            "Showing the page without its own styles. Choose it again to bring them back",
+            NOTICE_LIFETIME,
+        ));
+        SceneReaction::Redraw
     }
 
     fn open_new_window(&mut self) -> SceneReaction {
@@ -1003,6 +1052,7 @@ impl PageScene {
             }
             KeyInput::NewTab => self.new_tab(),
             KeyInput::NewWindow => self.open_new_window(),
+            KeyInput::ToggleReader => self.toggle_reader(),
             KeyInput::OpenHistory => self.open("about:history"),
             KeyInput::OpenDownloads => self.open("about:downloads"),
             KeyInput::CloseTab => self.close_tab(active),

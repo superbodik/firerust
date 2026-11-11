@@ -8,6 +8,7 @@ use fr_js::runtime::js_runtime::JsRuntime;
 use fr_page::load::page::Page;
 use fr_page::prefetch::resource_store::ResourceStore;
 use fr_page::script::flush_console::flush_console;
+use fr_page::style::plain_styles::plain_styles;
 use fr_page::style::restyle::restyle;
 use url::Url;
 
@@ -20,6 +21,7 @@ pub struct TabContent {
     pub images: ImageStore,
     pub layout: Option<LayoutCache>,
     pub runtime: Option<JsRuntime>,
+    pub is_plain: bool,
     seen_revision: u64,
 }
 
@@ -32,8 +34,15 @@ impl TabContent {
             images: page.images,
             layout: None,
             runtime: page.runtime,
+            is_plain: false,
             seen_revision,
         }
+    }
+
+    pub fn apply_plain_styles(&mut self) {
+        self.styles = plain_styles(&self.document.borrow());
+        self.is_plain = true;
+        self.layout = None;
     }
 
     pub fn is_stale(&self) -> bool {
@@ -44,9 +53,13 @@ impl TabContent {
         if !self.is_stale() {
             return false;
         }
-        let (styles, images) = restyle(&self.document.borrow(), url, &ResourceStore::new());
-        self.styles = styles;
-        self.images = images;
+        if self.is_plain {
+            self.styles = plain_styles(&self.document.borrow());
+        } else {
+            let (styles, images) = restyle(&self.document.borrow(), url, &ResourceStore::new());
+            self.styles = styles;
+            self.images = images;
+        }
         self.layout = None;
         self.seen_revision = self.document.revision();
         true

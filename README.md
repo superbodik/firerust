@@ -52,6 +52,7 @@ The goal is simple: open simple and medium-complexity sites while using noticeab
 - Files: plain text, JSON, XML and CSS open as readable pages, PNG / JPEG / GIF / WebP files open as a picture, everything else (archives, PDFs, `Content-Disposition: attachment`) is saved to your Downloads folder
 - More CSS: `border-radius`, `text-decoration`, `accent-color`, custom properties with `var()`, `@media` (for a desktop window), `@supports`, `@layer`, attribute selectors, `:not()`, `:nth-child()`, `:first-child`, `:link`, `:root` and sibling combinators
 - `about:settings` (theme, where your files live) and `about:console` (what scripts printed and which ones failed)
+- Reader view (`F9`) turns an article into a clean, readable page, and the menu can show any page without the site's own styles
 - Large pages lay out fast: Wikipedia articles take a quarter of a second in a release build
 - Deeply nested documents are safe: layout runs on a large stack and the tree is freed iteratively
 

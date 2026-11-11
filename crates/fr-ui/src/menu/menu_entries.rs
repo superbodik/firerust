@@ -2,7 +2,7 @@ use crate::menu::menu_entry::MenuEntry;
 use crate::menu::menu_kind::MenuKind;
 use crate::menu::menu_target::MenuTarget;
 
-const MAIN: [MenuEntry; 15] = [
+const MAIN: [MenuEntry; 18] = [
     MenuEntry::Item(MenuTarget::NewTab),
     MenuEntry::Item(MenuTarget::NewWindow),
     MenuEntry::Separator,
@@ -12,6 +12,9 @@ const MAIN: [MenuEntry; 15] = [
     MenuEntry::Item(MenuTarget::Passwords),
     MenuEntry::Separator,
     MenuEntry::Zoom,
+    MenuEntry::Separator,
+    MenuEntry::Item(MenuTarget::Reader),
+    MenuEntry::Item(MenuTarget::PlainStyles),
     MenuEntry::Separator,
     MenuEntry::Item(MenuTarget::Settings),
     MenuEntry::Item(MenuTarget::Console),
