@@ -1,4 +1,5 @@
 use crate::boxes::layout_box::LayoutBox;
+use crate::flow::float_band::FloatBand;
 use crate::inline::inline_buffer::InlineBuffer;
 use crate::metrics::content_area::ContentArea;
 
@@ -11,6 +12,7 @@ pub struct FlowState {
     pub inline: InlineBuffer,
     pub has_placed: bool,
     pub absorbs_top: bool,
+    pub floats: Vec<FloatBand>,
 }
 
 impl FlowState {
@@ -23,6 +25,7 @@ impl FlowState {
             inline: InlineBuffer::new(),
             has_placed: false,
             absorbs_top,
+            floats: Vec::new(),
         }
     }
 }

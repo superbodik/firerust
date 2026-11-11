@@ -7,7 +7,9 @@ use crate::boxes::layout_box::LayoutBox;
 use crate::boxes::layout_run::LayoutRun;
 use crate::boxes::text_box::TextBox;
 use crate::context::layout_context::LayoutContext;
+use crate::flow::available_area::available_area;
 use crate::flow::flow_state::FlowState;
+use crate::flow::narrowed_area::narrowed_area;
 use crate::inline::alignment_of::alignment_of;
 
 pub fn flush_inline(
@@ -20,16 +22,19 @@ pub fn flush_inline(
         return;
     }
     let alignment = alignment_of(container.text_align);
-    let height = {
-        let text_runs: Vec<_> = runs.iter().map(LayoutRun::as_text_run).collect();
-        measure_text(context.text, &text_runs, state.area.width, alignment).height
-    };
+    let text_runs: Vec<_> = runs.iter().map(LayoutRun::as_text_run).collect();
+    let probe = narrowed_area(state, state.cursor + state.pending_margin);
+    let mut height = measure_text(context.text, &text_runs, probe.width, alignment).height;
     if height <= 0.0 {
         return;
     }
     state.cursor += state.pending_margin;
     state.pending_margin = 0.0;
-    let rect = Rect::from_xywh(state.area.x, state.cursor, state.area.width, height);
+    let area = available_area(state);
+    if area.width != probe.width {
+        height = measure_text(context.text, &text_runs, area.width, alignment).height;
+    }
+    let rect = Rect::from_xywh(area.x, state.cursor, area.width, height);
     state.boxes.push(LayoutBox::plain(
         None,
         BoxKind::Text(TextBox { runs, alignment }),

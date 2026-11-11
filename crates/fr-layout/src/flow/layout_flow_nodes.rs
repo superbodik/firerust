@@ -21,6 +21,15 @@ pub fn layout_flow_nodes(
         handle_node(context, &mut state, child, style);
     }
     flush_inline(context, &mut state, style);
+    let float_bottom = state
+        .floats
+        .iter()
+        .map(|band| band.bottom)
+        .fold(f32::MIN, f32::max);
+    if float_bottom > state.cursor + state.pending_margin {
+        state.cursor = float_bottom;
+        state.pending_margin = 0.0;
+    }
 
     let trailing = state.pending_margin;
     let (content_bottom, margin_bottom_out) = if absorbs_bottom {

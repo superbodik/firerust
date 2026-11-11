@@ -6,12 +6,14 @@ use crate::parse::parse_background::parse_background;
 use crate::parse::parse_border::parse_border;
 use crate::parse::parse_border_radius::{parse_border_radius, parse_corner_radius};
 use crate::parse::parse_box_sizing::parse_box_sizing;
+use crate::parse::parse_clear::parse_clear;
 use crate::parse::parse_color::parse_color;
 use crate::parse::parse_display::parse_display;
 use crate::parse::parse_edges::parse_edges;
 use crate::parse::parse_flex::parse_flex;
 use crate::parse::parse_flex_direction::parse_flex_direction;
 use crate::parse::parse_flex_wrap::parse_flex_wrap;
+use crate::parse::parse_float::parse_float;
 use crate::parse::parse_font_family::parse_font_family;
 use crate::parse::parse_font_style::parse_font_style;
 use crate::parse::parse_font_weight::parse_font_weight;
@@ -54,6 +56,8 @@ pub fn parse_property(name: &str, parser: &mut Parser<'_>) -> Option<Vec<Declara
         "border-width" => parse_edges(parser).map(|edges| expand(edges, Declaration::BorderWidth)),
         "border-color" => single(parse_color(parser), Declaration::BorderColor),
         "accent-color" => single(parse_color(parser), Declaration::AccentColor),
+        "float" => single(parse_float(parser), Declaration::Float),
+        "clear" => single(parse_clear(parser), Declaration::Clear),
         "border" => parse_border(parser, &Side::ALL),
         "border-radius" => parse_border_radius(parser),
         "border-top-left-radius" => parse_corner_radius(parser, Corner::TopLeft),

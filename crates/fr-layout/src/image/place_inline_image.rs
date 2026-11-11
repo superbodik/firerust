@@ -3,6 +3,7 @@ use fr_dom::node::node_id::NodeId;
 
 use crate::block::block_spec::BlockSpec;
 use crate::context::layout_context::LayoutContext;
+use crate::flow::available_area::available_area;
 use crate::flow::flow_state::FlowState;
 use crate::image::layout_replaced::layout_replaced;
 use crate::inline::alignment_of::alignment_of;
@@ -29,14 +30,15 @@ pub fn place_inline_image(
     flush_inline(context, state, container);
     state.cursor += state.pending_margin;
     state.pending_margin = 0.0;
+    let area = available_area(state);
     let result = layout_replaced(
         context,
         id,
         style,
         BlockSpec {
-            x: state.area.x,
+            x: area.x,
             y: state.cursor,
-            available_width: state.area.width,
+            available_width: area.width,
             forced_width: None,
             forced_height: None,
         },

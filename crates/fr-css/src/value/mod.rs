@@ -1,11 +1,13 @@
 pub mod align_items;
 pub mod box_sizing;
+pub mod clear_side;
 pub mod corner;
 pub mod corners;
 pub mod display;
 pub mod edges;
 pub mod flex_direction;
 pub mod flex_style;
+pub mod float_side;
 pub mod font_family;
 pub mod font_style;
 pub mod justify_content;

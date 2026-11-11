@@ -2,9 +2,11 @@ use fr_geom::color::rgba::Rgba;
 
 use crate::value::align_items::AlignItems;
 use crate::value::box_sizing::BoxSizing;
+use crate::value::clear_side::ClearSide;
 use crate::value::corner::Corner;
 use crate::value::display::Display;
 use crate::value::flex_direction::FlexDirection;
+use crate::value::float_side::FloatSide;
 use crate::value::font_family::FontFamily;
 use crate::value::font_style::FontStyle;
 use crate::value::justify_content::JustifyContent;
@@ -38,6 +40,8 @@ pub enum Declaration {
     BorderWidth(Side, Length),
     BorderColor(Rgba),
     AccentColor(Rgba),
+    Float(FloatSide),
+    Clear(ClearSide),
     BorderRadius(Corner, Length),
     Custom(Box<str>, Box<str>),
     Deferred(Box<str>, Box<str>),

@@ -3,6 +3,7 @@ use fr_dom::node::node_id::NodeId;
 use crate::block::block_spec::BlockSpec;
 use crate::block::layout_block_box::layout_block_box;
 use crate::context::layout_context::LayoutContext;
+use crate::flow::available_area::available_area;
 use crate::flow::effective_margin_top::effective_margin_top;
 use crate::flow::flow_state::FlowState;
 use crate::metrics::collapse_margins::collapse_margins;
@@ -16,13 +17,14 @@ pub fn place_block(context: &mut LayoutContext<'_>, state: &mut FlowState, node:
     };
     state.cursor += gap;
     state.pending_margin = 0.0;
+    let area = available_area(state);
     let result = layout_block_box(
         context,
         node,
         BlockSpec {
-            x: state.area.x,
+            x: area.x,
             y: state.cursor,
-            available_width: state.area.width,
+            available_width: area.width,
             forced_width: None,
             forced_height: None,
         },

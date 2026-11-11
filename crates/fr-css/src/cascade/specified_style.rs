@@ -3,10 +3,12 @@ use fr_geom::color::rgba::Rgba;
 use crate::parse::declaration::Declaration;
 use crate::value::align_items::AlignItems;
 use crate::value::box_sizing::BoxSizing;
+use crate::value::clear_side::ClearSide;
 use crate::value::corners::Corners;
 use crate::value::display::Display;
 use crate::value::edges::Edges;
 use crate::value::flex_direction::FlexDirection;
+use crate::value::float_side::FloatSide;
 use crate::value::font_family::FontFamily;
 use crate::value::font_style::FontStyle;
 use crate::value::justify_content::JustifyContent;
@@ -39,6 +41,8 @@ pub struct SpecifiedStyle {
     pub border_width: Edges<Option<Length>>,
     pub border_color: Option<Rgba>,
     pub accent_color: Option<Rgba>,
+    pub float_side: Option<FloatSide>,
+    pub clear_side: Option<ClearSide>,
     pub border_radius: Corners<Option<Length>>,
     pub flex_direction: Option<FlexDirection>,
     pub flex_wrap: Option<bool>,
@@ -75,6 +79,8 @@ impl SpecifiedStyle {
             Declaration::BorderWidth(side, value) => self.border_width.set(*side, Some(*value)),
             Declaration::BorderColor(value) => self.border_color = Some(*value),
             Declaration::AccentColor(value) => self.accent_color = Some(*value),
+            Declaration::Float(value) => self.float_side = Some(*value),
+            Declaration::Clear(value) => self.clear_side = Some(*value),
             Declaration::Custom(..) | Declaration::Deferred(..) => {}
             Declaration::BorderRadius(corner, value) => {
                 self.border_radius.set(*corner, Some(*value))

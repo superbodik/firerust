@@ -1,8 +1,15 @@
+pub mod apply_clear;
+pub mod available_area;
 pub mod effective_margin_top;
 pub mod first_block_child;
+pub mod float_band;
 pub mod flow_result;
 pub mod flow_state;
 pub mod handle_node;
 pub mod layout_flow;
 pub mod layout_flow_nodes;
+pub mod narrowed_area;
+pub mod nearest_float_bottom;
 pub mod place_block;
+pub mod place_float;
+pub mod shrink_width;

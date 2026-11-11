@@ -47,6 +47,8 @@ pub fn compute_style(specified: &SpecifiedStyle, parent: &ComputedStyle) -> Comp
             .map(|value| relative(value, Length::Px(0.0)).px_or_zero()),
         border_color: specified.border_color.unwrap_or(color),
         accent_color: specified.accent_color.or(parent.accent_color),
+        float_side: specified.float_side.unwrap_or_default(),
+        clear_side: specified.clear_side.unwrap_or_default(),
         border_radius: specified
             .border_radius
             .map(|value| relative(value, Length::Px(0.0))),

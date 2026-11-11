@@ -1,13 +1,16 @@
 use fr_css::cascade::computed_style::ComputedStyle;
 use fr_css::value::display::Display;
+use fr_css::value::float_side::FloatSide;
 use fr_dom::node::node_id::NodeId;
 use fr_dom::query::element_name::element_name;
 
 use crate::context::layout_context::LayoutContext;
 use crate::control::control_kind_of::control_kind_of;
 use crate::control::place_control::place_control;
+use crate::flow::apply_clear::apply_clear;
 use crate::flow::flow_state::FlowState;
 use crate::flow::place_block::place_block;
+use crate::flow::place_float::place_float;
 use crate::image::place_inline_image::place_inline_image;
 use crate::inline::flush_inline::flush_inline;
 
@@ -35,12 +38,18 @@ pub fn handle_node(
     };
     match style.display {
         Display::None => {}
+        _ if style.float_side != FloatSide::None => {
+            flush_inline(context, state, container);
+            apply_clear(state, style.clear_side);
+            place_float(context, state, id, style);
+        }
         _ if is_form_field(context, id) => {
             place_form_field(context, state, id, style, container);
         }
         Display::Inline => handle_inline(context, state, id, style, container),
         _ => {
             flush_inline(context, state, container);
+            apply_clear(state, style.clear_side);
             place_block(context, state, id);
         }
     }
