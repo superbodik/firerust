@@ -1,7 +1,9 @@
 pub mod content_widths;
+pub mod draw_text;
 pub mod line_metrics;
 pub mod measure_runs;
 pub mod measure_text;
+pub mod paint_key;
 pub mod run_key;
 pub mod shape_runs;
 pub mod shaped_text;

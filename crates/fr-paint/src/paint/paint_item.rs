@@ -5,7 +5,7 @@ use fr_raster::draw::fill_rect::fill_rect;
 use fr_raster::draw::fill_rounded_corners::fill_rounded_corners;
 use fr_raster::surface::canvas::Canvas;
 use fr_text::engine::text_engine::TextEngine;
-use fr_text::render::shape_runs::shape_runs;
+use fr_text::render::draw_text::draw_text;
 
 use crate::display::display_item::DisplayItem;
 
@@ -52,8 +52,14 @@ pub fn paint_item(
                     text_run
                 })
                 .collect();
-            let mut shaped = shape_runs(engine, &text_runs, destination.size.width, *alignment);
-            shaped.draw(engine, canvas, destination.origin);
+            draw_text(
+                engine,
+                canvas,
+                &text_runs,
+                destination.size.width,
+                *alignment,
+                destination.origin,
+            );
         }
     }
 }

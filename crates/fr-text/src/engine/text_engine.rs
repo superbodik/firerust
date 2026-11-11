@@ -3,15 +3,18 @@ use std::collections::HashMap;
 use cosmic_text::{FontSystem, SwashCache};
 
 use crate::render::content_widths::ContentWidths;
+use crate::render::shaped_text::ShapedText;
 use crate::render::text_metrics::TextMetrics;
 
 const CACHE_LIMIT: usize = 40_000;
+const SHAPED_LIMIT: usize = 1_500;
 
 pub struct TextEngine {
     font_system: FontSystem,
     swash_cache: SwashCache,
     metrics_cache: HashMap<u64, TextMetrics>,
     widths_cache: HashMap<u64, ContentWidths>,
+    shaped_cache: HashMap<u64, ShapedText>,
 }
 
 impl TextEngine {
@@ -21,6 +24,7 @@ impl TextEngine {
             swash_cache: SwashCache::new(),
             metrics_cache: HashMap::new(),
             widths_cache: HashMap::new(),
+            shaped_cache: HashMap::new(),
         }
     }
 
@@ -37,6 +41,17 @@ impl TextEngine {
             self.metrics_cache.clear();
         }
         self.metrics_cache.insert(key, metrics);
+    }
+
+    pub fn take_shaped(&mut self, key: u64) -> Option<ShapedText> {
+        self.shaped_cache.remove(&key)
+    }
+
+    pub fn keep_shaped(&mut self, key: u64, shaped: ShapedText) {
+        if self.shaped_cache.len() >= SHAPED_LIMIT {
+            self.shaped_cache.clear();
+        }
+        self.shaped_cache.insert(key, shaped);
     }
 
     pub fn cached_widths(&self, key: u64) -> Option<ContentWidths> {
