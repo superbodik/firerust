@@ -1,8 +1,12 @@
+pub mod draw_icon;
+pub mod draw_icon_button;
 pub mod draw_load_bar;
 pub mod draw_memory_bar;
+pub mod draw_notice;
 pub mod draw_tab_strip;
 pub mod draw_toolbar;
 pub mod fit_text;
+pub mod security_badge;
 pub mod tab_strip_state;
 pub mod text_width;
 pub mod toolbar_run;

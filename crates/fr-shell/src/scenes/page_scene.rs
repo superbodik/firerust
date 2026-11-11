@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use fr_bookmarks::storage::bookmark_book::{BookmarkBook, BookmarkChange};
 use fr_dom::node::node_id::NodeId;
@@ -11,29 +11,35 @@ use fr_layout::page::layout_page::layout_page_with_focus;
 use fr_mem::meter::memory_meter::MemoryMeter;
 use fr_net::load::request::Request;
 use fr_page::images::shared_image_cache::shared_image_bytes;
-use fr_page::load::blank_page::blank_page;
+use fr_page::load::blank_page::blank_page_for;
 use fr_page::load::build_page::build_prefetched;
-use fr_page::load::error_page::error_page;
+use fr_page::load::error_page::error_page_for;
 use fr_page::load::page::Page;
 use fr_paint::build::build_display_list::build_display_list;
 use fr_paint::paint::paint_display_list::paint_display_list;
 use fr_passwords::model::credential::Credential;
 use fr_passwords::storage::password_vault::PasswordVault;
 use fr_raster::draw::clear::clear;
-use fr_raster::draw::fill_rect::fill_rect;
+use fr_raster::draw::fill_rounded_rect::fill_rounded_rect;
 use fr_raster::surface::canvas::Canvas;
 use fr_tab::model::layout_cache::LayoutCache;
 use fr_tab::set::tab_set::TabSet;
 use fr_tab::summary::memory_summary::memory_summary;
 use fr_text::engine::text_engine::TextEngine;
+use fr_theme::colors::palette::Palette;
+use fr_theme::colors::palette_for::palette_for;
+use fr_theme::kind::theme_kind::ThemeKind;
 use fr_ui::address::address_field::AddressField;
 use fr_ui::address::address_outcome::AddressOutcome;
 use fr_ui::address::apply_address_key::apply_address_key;
+use fr_ui::hover::chrome_hover::ChromeHover;
+use fr_ui::hover::hover_chrome::hover_chrome;
 use fr_ui::scroll::scroll_metrics::ScrollMetrics;
 use fr_ui::scroll::scroll_state::ScrollState;
 use fr_ui::scroll::scrollbar_thumb::scrollbar_thumb;
 use fr_ui::tabs::hit_tab_strip::hit_tab_strip;
 use fr_ui::tabs::tab_strip_target::TabStripTarget;
+use fr_ui::tabs::window_control::WindowControl;
 use fr_ui::toolbar::hit_toolbar::hit_toolbar;
 use fr_ui::toolbar::toolbar_metrics::CHROME_HEIGHT;
 use fr_ui::toolbar::toolbar_target::ToolbarTarget;
@@ -55,6 +61,7 @@ use crate::scenes::control_kind_in::control_kind_in;
 use crate::scenes::dispatch_event_to::dispatch_event_to;
 use crate::scenes::dispatch_page_click::dispatch_page_click;
 use crate::scenes::focus_key::FocusKey;
+use crate::scenes::forced_theme::forced_theme;
 use crate::scenes::form_focus::FormFocus;
 use crate::scenes::form_for::form_for;
 use crate::scenes::form_request::form_request;
@@ -68,17 +75,21 @@ use crate::scenes::pending_load::PendingLoad;
 use crate::scenes::refresh_active::refresh_active;
 use crate::scenes::request_for::request_for;
 use crate::scenes::run_due_timers::run_due_timers;
+use crate::scenes::tab_icon::tab_icon;
 use crate::scenes::timer_delay::timer_delay;
 use crate::scenes::zoom_key::zoom_key;
 use crate::toolbar::draw_load_bar::draw_load_bar;
-use crate::toolbar::draw_memory_bar::draw_memory_bar;
+use crate::toolbar::draw_memory_bar::{MEMORY_BAR_HEIGHT, draw_memory_bar};
+use crate::toolbar::draw_notice::draw_notice;
 use crate::toolbar::draw_tab_strip::draw_tab_strip;
 use crate::toolbar::draw_toolbar::draw_toolbar;
+use crate::toolbar::security_badge::SecurityBadge;
 use crate::toolbar::tab_strip_state::TabStripState;
 use crate::toolbar::toolbar_state::ToolbarState;
 
 const MAX_LIVE_TABS: usize = 2;
 const MEMORY_REFRESH: Duration = Duration::from_secs(1);
+const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 const LOAD_POLL: Duration = Duration::from_millis(33);
 const NOTICE_LIFETIME: Duration = Duration::from_secs(3);
 const SAVE_PROMPT_LIFETIME: Duration = Duration::from_secs(10);
@@ -101,13 +112,19 @@ pub struct PageScene {
     notice: Option<Notice>,
     vault: PasswordVault,
     pending_login: Option<Credential>,
+    theme: ThemeKind,
+    forced_theme: Option<ThemeKind>,
+    hover: ChromeHover,
+    maximized: bool,
+    last_strip_press: Option<Instant>,
 }
 
 impl PageScene {
     pub fn new(page: Page) -> Self {
+        let forced_theme = forced_theme();
         let mut address = AddressField::new();
         address.set_text(&address_text(&page.url));
-        Self {
+        let mut scene = Self {
             tabs: TabSet::new(page),
             text_engine: TextEngine::new(),
             scroll: ScrollState::new(),
@@ -125,7 +142,16 @@ impl PageScene {
             notice: None,
             vault: PasswordVault::open(),
             pending_login: None,
+            theme: forced_theme.unwrap_or_default(),
+            forced_theme,
+            hover: ChromeHover::Nothing,
+            maximized: false,
+            last_strip_press: None,
+        };
+        if scene.theme != ThemeKind::Light {
+            scene.rebuild_internal_pages();
         }
+        scene
     }
 
     pub fn open_first(&mut self, input: &str) {
@@ -176,7 +202,7 @@ impl PageScene {
     }
 
     fn new_tab(&mut self) -> SceneReaction {
-        let Some(page) = blank_page() else {
+        let Some(page) = blank_page_for(self.theme) else {
             return SceneReaction::Idle;
         };
         self.remember_scroll();
@@ -200,7 +226,12 @@ impl PageScene {
     fn begin_request(&mut self, request: Request, target: LoadTarget) {
         if request.url.scheme() == "about" {
             self.pending = None;
-            if let Some(page) = internal_page(&request.url, &mut self.bookmarks, &mut self.vault) {
+            if let Some(page) = internal_page(
+                &request.url,
+                &mut self.bookmarks,
+                &mut self.vault,
+                self.theme,
+            ) {
                 self.apply_page(page, target);
             }
             return;
@@ -315,7 +346,7 @@ impl PageScene {
             Ok(prefetched) => build_prefetched(prefetched),
             Err(message) => {
                 eprintln!("cannot open {}: {message}", pending.url);
-                error_page(pending.url.clone(), &message)
+                error_page_for(pending.url.clone(), &message, self.theme)
             }
         };
         self.apply_page(page, pending.target);
@@ -348,11 +379,59 @@ impl PageScene {
         SceneReaction::Redraw
     }
 
+    fn reload_or_stop(&mut self) -> SceneReaction {
+        if self.pending.take().is_some() {
+            return SceneReaction::Redraw;
+        }
+        self.reload()
+    }
+
+    fn palette(&self) -> &'static Palette {
+        palette_for(self.theme)
+    }
+
     fn reload(&mut self) -> SceneReaction {
         let url = self.tabs.active().url().clone();
         let scroll = self.scroll.offset();
         self.begin_request(Request::get(url), LoadTarget::Reload { scroll });
         SceneReaction::Redraw
+    }
+
+    fn press_at(&mut self, x: f32, y: f32) -> SceneReaction {
+        let target = hit_tab_strip(Point::new(x, y), self.tabs.len(), self.viewport_width);
+        if target != Some(TabStripTarget::Empty) {
+            self.last_strip_press = None;
+            return SceneReaction::Idle;
+        }
+        let is_double = self
+            .last_strip_press
+            .is_some_and(|earlier| earlier.elapsed() < DOUBLE_CLICK);
+        if is_double {
+            self.last_strip_press = None;
+            return SceneReaction::ToggleMaximize;
+        }
+        self.last_strip_press = Some(Instant::now());
+        SceneReaction::DragWindow
+    }
+
+    fn rebuild_internal_pages(&mut self) {
+        let internal: Vec<(usize, Url)> = self
+            .tabs
+            .tabs()
+            .iter()
+            .enumerate()
+            .filter(|(_, tab)| tab.url().scheme() == "about" && !tab.is_discarded())
+            .map(|(index, tab)| (index, tab.url().clone()))
+            .collect();
+        for (index, url) in internal {
+            let Some(page) = internal_page(&url, &mut self.bookmarks, &mut self.vault, self.theme)
+            else {
+                continue;
+            };
+            if let Some(tab) = self.tabs.tab_mut(index) {
+                tab.restore(page);
+            }
+        }
     }
 
     fn zoom(&self) -> ZoomLevel {
@@ -411,6 +490,9 @@ impl PageScene {
                 TabStripTarget::Tab(index) => self.switch_to(index),
                 TabStripTarget::Close(index) => self.close_tab(index),
                 TabStripTarget::New => self.new_tab(),
+                TabStripTarget::Control(WindowControl::Minimize) => SceneReaction::Minimize,
+                TabStripTarget::Control(WindowControl::Maximize) => SceneReaction::ToggleMaximize,
+                TabStripTarget::Control(WindowControl::Close) => SceneReaction::CloseWindow,
                 TabStripTarget::Empty => SceneReaction::Idle,
             };
         }
@@ -418,7 +500,9 @@ impl PageScene {
             return match target {
                 ToolbarTarget::Back => self.travel(false),
                 ToolbarTarget::Forward => self.travel(true),
-                ToolbarTarget::Reload => self.reload(),
+                ToolbarTarget::Reload => self.reload_or_stop(),
+                ToolbarTarget::Star => self.toggle_bookmark(),
+                ToolbarTarget::Menu => self.open("about:menu"),
                 ToolbarTarget::Address => {
                     self.address.focus();
                     SceneReaction::Redraw
@@ -645,7 +729,15 @@ impl PageScene {
                 .iter()
                 .map(|tab| tab.is_discarded())
                 .collect(),
+            icons: self
+                .tabs
+                .tabs()
+                .iter()
+                .map(|tab| tab_icon(tab.url()))
+                .collect(),
             active: self.tabs.active_index(),
+            hover: self.hover,
+            maximized: self.maximized,
         }
     }
 }
@@ -664,34 +756,82 @@ impl RenderScene for PageScene {
         } else {
             clear(canvas, Rgba::opaque(255, 255, 255));
         }
+        let palette = self.palette();
         let strip = self.tab_strip_state();
-        draw_tab_strip(canvas, &mut self.text_engine, &strip);
+        let url = self.tabs.active().url().clone();
         let toolbar = ToolbarState {
             field: &self.address,
             can_go_back: self.tabs.active().history().can_go_back(),
             can_go_forward: self.tabs.active().history().can_go_forward(),
+            is_loading: self.pending.is_some(),
+            is_bookmarked: self.bookmarks.contains(url.as_str()),
+            badge: SecurityBadge::of(&url),
+            hover: self.hover,
         };
-        draw_toolbar(canvas, &mut self.text_engine, &toolbar);
+        draw_toolbar(canvas, &mut self.text_engine, palette, &toolbar);
+        draw_tab_strip(canvas, &mut self.text_engine, palette, &strip);
         if let Some(pending) = &self.pending {
-            draw_load_bar(canvas, pending.started.elapsed());
+            draw_load_bar(canvas, palette, pending.started.elapsed());
         }
+        let mut lift = 0.0;
         if self.shows_memory {
             let process = self.meter.sample_if_stale(MEMORY_REFRESH);
             let summary = memory_summary(process, self.tabs.tabs(), shared_image_bytes());
-            draw_memory_bar(canvas, &mut self.text_engine, &summary);
+            draw_memory_bar(canvas, &mut self.text_engine, palette, &summary);
+            lift = MEMORY_BAR_HEIGHT;
         }
         if let Some(notice) = &self.notice {
-            draw_memory_bar(canvas, &mut self.text_engine, &notice.message);
+            draw_notice(
+                canvas,
+                &mut self.text_engine,
+                palette,
+                &notice.message,
+                lift,
+            );
         }
+    }
+
+    fn set_dark(&mut self, dark: bool) -> SceneReaction {
+        if self.forced_theme.is_some() {
+            return SceneReaction::Idle;
+        }
+        let theme = ThemeKind::from_dark(dark);
+        if theme == self.theme {
+            return SceneReaction::Idle;
+        }
+        self.theme = theme;
+        self.rebuild_internal_pages();
+        SceneReaction::Redraw
+    }
+
+    fn set_maximized(&mut self, maximized: bool) -> SceneReaction {
+        if maximized == self.maximized {
+            return SceneReaction::Idle;
+        }
+        self.maximized = maximized;
+        SceneReaction::Redraw
     }
 
     fn handle(&mut self, event: InputEvent) -> SceneReaction {
         match event {
             InputEvent::Click { x, y } => self.click(x, y),
+            InputEvent::Press { x, y } => self.press_at(x, y),
             InputEvent::PointerMoved { x, y } => {
-                self.is_over_link =
-                    self.target_at(x, y).is_some() || self.is_over_clickable_control(x, y);
-                SceneReaction::Idle
+                let hover = hover_chrome(Point::new(x, y), self.tabs.len(), self.viewport_width);
+                let hover_changed = hover != self.hover;
+                self.hover = hover;
+                let over_chrome_button = !matches!(
+                    hover,
+                    ChromeHover::Nothing | ChromeHover::Toolbar(ToolbarTarget::Address)
+                );
+                self.is_over_link = over_chrome_button
+                    || self.target_at(x, y).is_some()
+                    || self.is_over_clickable_control(x, y);
+                if hover_changed {
+                    SceneReaction::Redraw
+                } else {
+                    SceneReaction::Idle
+                }
             }
             InputEvent::Character(character) if self.address.is_focused() => {
                 self.address.insert(character);
@@ -787,7 +927,12 @@ impl PageScene {
                 thumb.size.width,
                 thumb.size.height,
             );
-            fill_rect(canvas, placed, Rgba::new(0, 0, 0, 90));
+            fill_rounded_rect(
+                canvas,
+                placed,
+                placed.size.width / 2.0,
+                self.palette().scrollbar,
+            );
         }
     }
 }

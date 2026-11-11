@@ -4,5 +4,7 @@ pub enum ToolbarTarget {
     Forward,
     Reload,
     Address,
+    Star,
+    Menu,
     Empty,
 }

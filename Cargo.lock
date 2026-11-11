@@ -1070,6 +1070,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fr-icons"
+version = "0.0.1"
+dependencies = [
+ "fr-geom",
+]
+
+[[package]]
 name = "fr-image"
 version = "0.0.1"
 dependencies = [
@@ -1134,6 +1141,7 @@ dependencies = [
  "fr-security",
  "fr-test-server",
  "fr-text",
+ "fr-theme",
  "url",
 ]
 
@@ -1185,6 +1193,7 @@ dependencies = [
  "fr-dom",
  "fr-form",
  "fr-geom",
+ "fr-icons",
  "fr-js",
  "fr-layout",
  "fr-mem",
@@ -1195,6 +1204,7 @@ dependencies = [
  "fr-raster",
  "fr-tab",
  "fr-text",
+ "fr-theme",
  "fr-ui",
  "fr-window",
  "url",
@@ -1234,6 +1244,13 @@ dependencies = [
  "cosmic-text",
  "fr-geom",
  "fr-raster",
+]
+
+[[package]]
+name = "fr-theme"
+version = "0.0.1"
+dependencies = [
+ "fr-geom",
 ]
 
 [[package]]

@@ -13,6 +13,7 @@ fr-image.workspace = true
 fr-js.workspace = true
 fr-net.workspace = true
 fr-security.workspace = true
+fr-theme.workspace = true
 url.workspace = true
 
 [dev-dependencies]

@@ -1,16 +1,33 @@
 use fr_geom::geometry::rect::Rect;
 
-pub const TAB_STRIP_HEIGHT: f32 = 34.0;
+use crate::tabs::window_control::WindowControl;
+
+pub const TAB_STRIP_HEIGHT: f32 = 40.0;
 const MARGIN: f32 = 8.0;
-const MIN_TAB_WIDTH: f32 = 70.0;
-const MAX_TAB_WIDTH: f32 = 220.0;
-const TAB_TOP: f32 = 4.0;
-const NEW_BUTTON_SIZE: f32 = 26.0;
-const CLOSE_SIZE: f32 = 16.0;
-const CLOSE_INSET: f32 = 6.0;
+const MIN_TAB_WIDTH: f32 = 80.0;
+const MAX_TAB_WIDTH: f32 = 240.0;
+const TAB_TOP: f32 = 6.0;
+const NEW_BUTTON_SIZE: f32 = 30.0;
+const CLOSE_SIZE: f32 = 20.0;
+const CLOSE_INSET: f32 = 8.0;
+pub const CONTROL_WIDTH: f32 = 46.0;
+const DRAG_GAP: f32 = 40.0;
+
+pub fn controls_width() -> f32 {
+    CONTROL_WIDTH * WindowControl::ALL.len() as f32
+}
+
+pub fn control_rect(control: WindowControl, strip_width: f32) -> Rect {
+    Rect::from_xywh(
+        strip_width - controls_width() + control.slot() * CONTROL_WIDTH,
+        0.0,
+        CONTROL_WIDTH,
+        TAB_STRIP_HEIGHT,
+    )
+}
 
 fn tabs_area_width(strip_width: f32) -> f32 {
-    (strip_width - 2.0 * MARGIN - NEW_BUTTON_SIZE).max(0.0)
+    (strip_width - MARGIN - NEW_BUTTON_SIZE - controls_width() - DRAG_GAP).max(0.0)
 }
 
 pub fn tab_width(count: usize, strip_width: f32) -> f32 {

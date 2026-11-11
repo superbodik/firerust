@@ -1,4 +1,10 @@
+pub mod blit_canvas;
 pub mod clear;
 pub mod draw_image;
 pub mod fill_rect;
+pub mod fill_rounded_rect;
+pub mod fill_vector_path;
 pub mod paint_for;
+pub mod rounded_rect_path;
+pub mod smooth_paint;
+pub mod stroke_rounded_rect;

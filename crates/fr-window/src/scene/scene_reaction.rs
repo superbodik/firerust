@@ -2,4 +2,8 @@
 pub enum SceneReaction {
     Idle,
     Redraw,
+    DragWindow,
+    Minimize,
+    ToggleMaximize,
+    CloseWindow,
 }

@@ -28,4 +28,12 @@ pub trait RenderScene {
     fn tick(&mut self) -> SceneReaction {
         SceneReaction::Idle
     }
+
+    fn set_dark(&mut self, _dark: bool) -> SceneReaction {
+        SceneReaction::Idle
+    }
+
+    fn set_maximized(&mut self, _maximized: bool) -> SceneReaction {
+        SceneReaction::Idle
+    }
 }

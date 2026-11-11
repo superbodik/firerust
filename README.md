@@ -41,6 +41,7 @@ The goal is simple: open simple and medium-complexity sites while using noticeab
 - A readable error page when a page cannot be opened
 - Tabs: new tab, close, switch; background tabs beyond the two most recently used drop their page from memory and are fetched again when selected
 - A shared byte-limited image cache and a memory panel (`Ctrl+M`)
+- Interface: one window row with the tabs in the title bar and our own window buttons, light and dark themes that follow Windows (`FIRERUST_THEME=dark` or `light` forces one), [Bootstrap Icons](https://icons.getbootstrap.com/) (MIT) drawn as vector paths, hover states, a lock or warning badge and a bookmark star in the address bar, and a menu page at `about:menu`
 - Bookmarks: `Ctrl+D` bookmarks or unbookmarks the page, `Ctrl+B` opens the list, `about:import` brings bookmarks in from Chrome, Edge, Brave, Vivaldi, Opera or any HTML export (Firefox included)
 - Passwords: after you sign in the bottom bar offers to save the login (`Ctrl+S`), saved logins are filled into the form when you come back, `Ctrl+P` lists them, `about:import-passwords` brings them in from a CSV export of Chrome, Edge, Firefox or Bitwarden; the file is encrypted with your Windows account key
 - Safety: a web page cannot read local files or link to them, a secure page cannot load insecure images, styles or scripts, and a `Content-Security-Policy` meta tag limits where scripts, styles and images come from
@@ -112,6 +113,8 @@ Every crate has one responsibility. Every file holds one type or one function.
 fr-shell ─ binary: entry point and scenes
  ├─ fr-window   window (winit), input events, frame output (softbuffer)
  ├─ fr-ui       scroll state, address field, toolbar geometry (no window needed)
+ ├─ fr-icons     Bootstrap Icons as vector paths
+ ├─ fr-theme     light and dark palettes and page styles
  ├─ fr-bookmarks bookmark list, file storage and import from other browsers
  ├─ fr-passwords saved logins in an encrypted file, CSV import
  ├─ fr-dpapi    Windows DPAPI wrapper, the only crate with unsafe code
