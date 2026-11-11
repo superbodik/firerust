@@ -3,6 +3,7 @@ use fr_dom::tree::document::Document;
 
 use crate::select::attribute_matches::attribute_matches;
 use crate::select::compound::Compound;
+use crate::select::matches_pseudo::matches_pseudo;
 
 pub fn matches_compound(document: &Document, element: NodeId, compound: &Compound) -> bool {
     let Some(data) = document
@@ -29,6 +30,10 @@ pub fn matches_compound(document: &Document, element: NodeId, compound: &Compoun
             .attributes
             .iter()
             .all(|condition| attribute_matches(condition, data.attribute(&condition.name)))
+        && compound
+            .pseudos
+            .iter()
+            .all(|pseudo| matches_pseudo(document, element, pseudo))
 }
 
 fn has_class(attribute: Option<&str>, class: &str) -> bool {

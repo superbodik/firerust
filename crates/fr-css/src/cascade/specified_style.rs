@@ -75,6 +75,7 @@ impl SpecifiedStyle {
             Declaration::BorderWidth(side, value) => self.border_width.set(*side, Some(*value)),
             Declaration::BorderColor(value) => self.border_color = Some(*value),
             Declaration::AccentColor(value) => self.accent_color = Some(*value),
+            Declaration::Custom(..) | Declaration::Deferred(..) => {}
             Declaration::BorderRadius(corner, value) => {
                 self.border_radius.set(*corner, Some(*value))
             }

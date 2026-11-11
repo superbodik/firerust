@@ -39,6 +39,8 @@ pub enum Declaration {
     BorderColor(Rgba),
     AccentColor(Rgba),
     BorderRadius(Corner, Length),
+    Custom(Box<str>, Box<str>),
+    Deferred(Box<str>, Box<str>),
     FlexDirection(FlexDirection),
     FlexWrap(bool),
     JustifyContent(JustifyContent),

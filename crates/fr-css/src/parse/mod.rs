@@ -22,6 +22,7 @@ pub mod parse_keyword;
 pub mod parse_length;
 pub mod parse_line_height;
 pub mod parse_property;
+pub mod parse_property_text;
 pub mod parse_stylesheet;
 pub mod parse_text_align;
 pub mod parse_text_decoration;

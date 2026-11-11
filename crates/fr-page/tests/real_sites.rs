@@ -31,9 +31,17 @@ fn real_sites_give_a_title_and_text() {
     let mut failures: Vec<String> = Vec::new();
 
     for site in SITES {
+        let started = std::time::Instant::now();
         match load_page(site, base_dir) {
             Ok(page) => {
+                let loaded = started.elapsed();
+                let laid_out = std::time::Instant::now();
                 let tree = layout_of(&page, 1000.0);
+                println!(
+                    "{site}: load {} ms, layout {} ms",
+                    loaded.as_millis(),
+                    laid_out.elapsed().as_millis()
+                );
                 let text_count = texts(&tree).len();
                 println!(
                     "{site}: title={:?} text boxes={text_count} images={} height={}",

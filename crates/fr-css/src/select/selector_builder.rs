@@ -3,6 +3,7 @@ use cssparser::Token;
 use crate::select::attribute_condition::AttributeCondition;
 use crate::select::combinator::Combinator;
 use crate::select::compound::Compound;
+use crate::select::pseudo_class::PseudoClass;
 use crate::select::selector::Selector;
 use crate::select::selector_part::SelectorPart;
 
@@ -32,14 +33,9 @@ impl SelectorBuilder {
     pub fn accept(&mut self, token: &Token<'_>) {
         match token {
             Token::WhiteSpace(_) => self.close_compound(),
-            Token::Delim('>') => {
-                self.close_compound();
-                if self.parts.is_empty() {
-                    self.is_valid = false;
-                }
-                self.combinator = Combinator::Child;
-                self.is_expecting_compound = true;
-            }
+            Token::Delim('>') => self.accept_combinator(Combinator::Child),
+            Token::Delim('+') => self.accept_combinator(Combinator::NextSibling),
+            Token::Delim('~') => self.accept_combinator(Combinator::SubsequentSibling),
             Token::Delim('.') => self.is_after_dot = true,
             Token::Delim('*') => self.touch(),
             Token::Ident(name) => {
@@ -56,6 +52,20 @@ impl SelectorBuilder {
             }
             _ => self.is_valid = false,
         }
+    }
+
+    fn accept_combinator(&mut self, combinator: Combinator) {
+        self.close_compound();
+        if self.parts.is_empty() {
+            self.is_valid = false;
+        }
+        self.combinator = combinator;
+        self.is_expecting_compound = true;
+    }
+
+    pub fn accept_pseudo(&mut self, pseudo: PseudoClass) {
+        self.compound.pseudos.push(pseudo);
+        self.touch();
     }
 
     pub fn accept_attribute(&mut self, condition: AttributeCondition) {

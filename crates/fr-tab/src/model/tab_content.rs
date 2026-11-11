@@ -2,6 +2,7 @@ use fr_css::cascade::style_map::StyleMap;
 use fr_dom::node::node_id::NodeId;
 use fr_dom::tree::shared_document::SharedDocument;
 use fr_image::store::image_store::ImageStore;
+use fr_js::log::report_script_error::report_script_error;
 use fr_js::natives::navigate_request::NavigationRequest;
 use fr_js::runtime::js_runtime::JsRuntime;
 use fr_page::load::page::Page;
@@ -63,7 +64,7 @@ impl TabContent {
         let allowed = match runtime.dispatch_event(node, event_type, point) {
             Ok(allowed) => allowed,
             Err(error) => {
-                eprintln!("script error: {error}");
+                report_script_error(&error);
                 true
             }
         };
@@ -76,7 +77,7 @@ impl TabContent {
             return;
         };
         if let Err(error) = runtime.advance_time(now_ms) {
-            eprintln!("script error: {error}");
+            report_script_error(&error);
         }
         flush_console(runtime);
     }

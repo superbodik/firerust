@@ -1,5 +1,6 @@
 use cssparser::{Delimiter, ParseError, Parser};
 
+use crate::parse::declaration::Declaration;
 use crate::parse::parse_property::parse_property;
 use crate::parse::style_declaration::StyleDeclaration;
 
@@ -18,13 +19,28 @@ pub fn parse_declaration_block(parser: &mut Parser<'_>) -> Vec<StyleDeclaration>
 fn parse_declaration(parser: &mut Parser<'_>) -> Result<Vec<StyleDeclaration>, ParseError<()>> {
     let name = parser.expect_ident()?.to_ascii_lowercase();
     parser.expect_colon()?;
-    let declarations =
-        parser.parse_until_before(Delimiter::Bang, |value| {
-            match parse_property(&name, value) {
-                Some(parsed) if value.is_exhausted() => Ok(parsed),
-                _ => Err(ParseError::custom(())),
+    let declarations = parser.parse_until_before(Delimiter::Bang, |value| {
+        if name.starts_with("--") {
+            let text = raw_value(value);
+            return Ok(vec![Declaration::Custom(name.as_str().into(), text.into())]);
+        }
+        let start = value.position();
+        match parse_property(&name, value) {
+            Some(parsed) if value.is_exhausted() => Ok(parsed),
+            _ => {
+                while value.next_including_whitespace().is_ok() {}
+                let text = value.slice_from(start).trim();
+                if text.to_ascii_lowercase().contains("var(") {
+                    Ok(vec![Declaration::Deferred(
+                        name.as_str().into(),
+                        text.into(),
+                    )])
+                } else {
+                    Err(ParseError::custom(()))
+                }
             }
-        })?;
+        }
+    })?;
     let is_important = parser
         .try_parse(|inner| {
             inner.expect_delim('!')?;
@@ -39,4 +55,10 @@ fn parse_declaration(parser: &mut Parser<'_>) -> Result<Vec<StyleDeclaration>, P
             is_important,
         })
         .collect())
+}
+
+fn raw_value(parser: &mut Parser<'_>) -> String {
+    let start = parser.position();
+    while parser.next_including_whitespace().is_ok() {}
+    parser.slice_from(start).trim().to_owned()
 }

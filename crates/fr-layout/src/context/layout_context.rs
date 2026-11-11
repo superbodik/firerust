@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+
 use fr_css::cascade::style_map::StyleMap;
+use fr_dom::node::node_id::NodeId;
 use fr_dom::tree::document::Document;
 use fr_image::store::image_store::ImageStore;
 use fr_text::engine::text_engine::TextEngine;
+use fr_text::render::content_widths::ContentWidths;
 
 use crate::control::control_focus::ControlFocus;
 
@@ -11,6 +15,7 @@ pub struct LayoutContext<'a> {
     pub images: &'a ImageStore,
     pub text: &'a mut TextEngine,
     pub focus: Option<ControlFocus>,
+    pub intrinsic_widths: HashMap<NodeId, ContentWidths>,
 }
 
 impl<'a> LayoutContext<'a> {
@@ -26,6 +31,7 @@ impl<'a> LayoutContext<'a> {
             images,
             text,
             focus: None,
+            intrinsic_widths: HashMap::new(),
         }
     }
 

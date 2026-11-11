@@ -32,8 +32,9 @@ fn comments_are_ignored() {
 
 #[test]
 fn at_rules_with_blocks_are_skipped_entirely() {
-    let sheet =
-        parse_stylesheet("@media (min-width: 10px) { p { color: red } } div { color: blue }");
+    let sheet = parse_stylesheet(
+        "@font-face { font-family: x } @media print { p { color: red } } div { color: blue }",
+    );
 
     assert_eq!(sheet.rules.len(), 1);
 }
@@ -103,7 +104,7 @@ fn a_rule_with_a_functional_pseudo_class_is_kept_or_dropped_whole() {
 #[test]
 fn rules_after_an_at_rule_block_still_parse() {
     let sheet = parse_stylesheet(
-        "@media (min-width: 600px) { p { color: red } } a[href] { color: blue } b { color: green }",
+        "@media print { p { color: red } } a[href] { color: blue } b { color: green }",
     );
 
     assert_eq!(sheet.rules.len(), 2);

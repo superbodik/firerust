@@ -30,6 +30,27 @@ impl ShapedText {
             .fold(0.0, f32::max)
     }
 
+    pub fn longest_word_width(&self) -> f32 {
+        let mut longest = 0.0_f32;
+        for layout in self.buffer.layout_runs() {
+            let mut word = 0.0_f32;
+            for glyph in layout.glyphs {
+                let is_space = layout
+                    .text
+                    .get(glyph.start..glyph.end)
+                    .is_some_and(|piece| piece.chars().all(char::is_whitespace));
+                if is_space {
+                    longest = longest.max(word);
+                    word = 0.0;
+                } else {
+                    word += glyph.w;
+                }
+            }
+            longest = longest.max(word);
+        }
+        longest
+    }
+
     pub fn offset_at(&self, x: f32, y: f32) -> Option<usize> {
         let on_text = self.buffer.layout_runs().any(|layout| {
             let on_line = y >= layout.line_top && y < layout.line_top + layout.line_height;

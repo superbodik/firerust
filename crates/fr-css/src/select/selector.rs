@@ -14,7 +14,9 @@ impl Selector {
             if part.compound.id.is_some() {
                 ids += 1;
             }
-            classes += (part.compound.classes.len() + part.compound.attributes.len()) as u32;
+            classes += (part.compound.classes.len()
+                + part.compound.attributes.len()
+                + part.compound.pseudos.len()) as u32;
             if part.compound.tag.is_some() {
                 tags += 1;
             }

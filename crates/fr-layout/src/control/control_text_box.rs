@@ -4,7 +4,7 @@ use fr_geom::color::rgba::Rgba;
 use fr_geom::geometry::rect::Rect;
 use fr_text::engine::text_engine::TextEngine;
 use fr_text::render::measure_runs::measure_runs;
-use fr_text::render::shape_runs::shape_runs;
+use fr_text::render::measure_text::measure_text;
 use fr_text::render::text_alignment::TextAlignment;
 
 use crate::boxes::box_kind::BoxKind;
@@ -48,7 +48,7 @@ pub fn control_text_box(
         ControlKind::Button | ControlKind::Checkbox | ControlKind::Radio => TextAlignment::Center,
         _ => TextAlignment::Left,
     };
-    let height = shape_runs(engine, &[run.as_text_run()], inner_width, alignment).height();
+    let height = measure_text(engine, &[run.as_text_run()], inner_width, alignment).height;
     let top = if is_single_line {
         frame.origin.y + ((frame.size.height - height) / 2.0).max(0.0)
     } else {

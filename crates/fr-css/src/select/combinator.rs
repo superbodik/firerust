@@ -2,4 +2,6 @@
 pub enum Combinator {
     Descendant,
     Child,
+    NextSibling,
+    SubsequentSibling,
 }

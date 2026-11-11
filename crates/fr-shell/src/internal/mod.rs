@@ -1,4 +1,5 @@
 pub mod bookmarks_page;
+pub mod console_page;
 pub mod group_html;
 pub mod import_page;
 pub mod import_passwords_page;
@@ -11,3 +12,4 @@ pub mod password_row;
 pub mod passwords_page;
 pub mod query_value;
 pub mod row;
+pub mod settings_page;

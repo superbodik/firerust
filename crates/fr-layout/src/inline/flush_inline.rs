@@ -1,6 +1,6 @@
 use fr_css::cascade::computed_style::ComputedStyle;
 use fr_geom::geometry::rect::Rect;
-use fr_text::render::shape_runs::shape_runs;
+use fr_text::render::measure_text::measure_text;
 
 use crate::boxes::box_kind::BoxKind;
 use crate::boxes::layout_box::LayoutBox;
@@ -22,7 +22,7 @@ pub fn flush_inline(
     let alignment = alignment_of(container.text_align);
     let height = {
         let text_runs: Vec<_> = runs.iter().map(LayoutRun::as_text_run).collect();
-        shape_runs(context.text, &text_runs, state.area.width, alignment).height()
+        measure_text(context.text, &text_runs, state.area.width, alignment).height
     };
     if height <= 0.0 {
         return;

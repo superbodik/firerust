@@ -10,6 +10,15 @@ use crate::intrinsic::image_widths::image_widths;
 use crate::table::table_widths::table_widths;
 
 pub fn content_widths_of(context: &mut LayoutContext<'_>, node: NodeId) -> ContentWidths {
+    if let Some(known) = context.intrinsic_widths.get(&node) {
+        return *known;
+    }
+    let widths = compute_content_widths(context, node);
+    context.intrinsic_widths.insert(node, widths);
+    widths
+}
+
+fn compute_content_widths(context: &mut LayoutContext<'_>, node: NodeId) -> ContentWidths {
     let document = context.document();
     let styles = context.styles();
     let Some(style) = styles.get(node) else {

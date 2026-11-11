@@ -29,6 +29,11 @@ use fr_passwords::storage::password_vault::PasswordVault;
 use fr_raster::draw::clear::clear;
 use fr_raster::draw::fill_rounded_rect::fill_rounded_rect;
 use fr_raster::surface::canvas::Canvas;
+use fr_settings::model::settings::Settings;
+use fr_settings::model::theme_choice::ThemeChoice;
+use fr_settings::storage::load_settings::load_settings;
+use fr_settings::storage::save_settings::save_settings;
+use fr_settings::storage::settings_path::settings_path;
 use fr_tab::model::layout_cache::LayoutCache;
 use fr_tab::set::tab_set::TabSet;
 use fr_tab::summary::memory_summary::memory_summary;
@@ -59,6 +64,7 @@ use fr_window::scene::scene_reaction::SceneReaction;
 use url::Url;
 
 use crate::internal::internal_page::internal_page;
+use crate::internal::query_value::query_value;
 use crate::scenes::address_text::address_text;
 use crate::scenes::autofill_logins::autofill_logins;
 use crate::scenes::click_control::click_control;
@@ -85,6 +91,7 @@ use crate::scenes::refresh_active::refresh_active;
 use crate::scenes::request_for::request_for;
 use crate::scenes::run_due_timers::run_due_timers;
 use crate::scenes::tab_icon::tab_icon;
+use crate::scenes::theme_for::theme_for;
 use crate::scenes::timer_delay::timer_delay;
 use crate::scenes::zoom_key::zoom_key;
 use crate::toolbar::draw_link_status::draw_link_status;
@@ -125,16 +132,22 @@ pub struct PageScene {
     pending_login: Option<Credential>,
     theme: ThemeKind,
     forced_theme: Option<ThemeKind>,
+    settings: Settings,
+    system_dark: bool,
     hover: ChromeHover,
     maximized: bool,
     last_strip_press: Option<Instant>,
     pending_fragment: Option<String>,
     hovered_link: Option<String>,
+    logs_frames: bool,
 }
 
 impl PageScene {
     pub fn new(page: Page) -> Self {
         let forced_theme = forced_theme();
+        let settings = settings_path()
+            .map(|path| load_settings(&path))
+            .unwrap_or_default();
         let mut address = AddressField::new();
         address.set_text(&address_text(&page.url));
         let mut scene = Self {
@@ -155,13 +168,16 @@ impl PageScene {
             notice: None,
             vault: PasswordVault::open(),
             pending_login: None,
-            theme: forced_theme.unwrap_or_default(),
+            theme: theme_for(forced_theme, settings.theme, false),
             forced_theme,
+            settings,
+            system_dark: false,
             hover: ChromeHover::Nothing,
             maximized: false,
             last_strip_press: None,
             pending_fragment: None,
             hovered_link: None,
+            logs_frames: std::env::var_os("FIRERUST_FRAME_LOG").is_some(),
         };
         if scene.theme != ThemeKind::Light {
             scene.rebuild_internal_pages();
@@ -247,10 +263,13 @@ impl PageScene {
     fn begin_request(&mut self, request: Request, target: LoadTarget) {
         if request.url.scheme() == "about" {
             self.pending = None;
+            self.apply_requested_settings(&request.url);
             if let Some(page) = internal_page(
                 &request.url,
                 &mut self.bookmarks,
                 &mut self.vault,
+                &self.settings,
+                self.forced_theme.is_some(),
                 self.theme,
             ) {
                 self.apply_page(page, target);
@@ -483,8 +502,14 @@ impl PageScene {
             .map(|(index, tab)| (index, tab.url().clone()))
             .collect();
         for (index, url) in internal {
-            let Some(page) = internal_page(&url, &mut self.bookmarks, &mut self.vault, self.theme)
-            else {
+            let Some(page) = internal_page(
+                &url,
+                &mut self.bookmarks,
+                &mut self.vault,
+                &self.settings,
+                self.forced_theme.is_some(),
+                self.theme,
+            ) else {
                 continue;
             };
             if let Some(tab) = self.tabs.tab_mut(index) {
@@ -602,6 +627,33 @@ impl PageScene {
         } else {
             SceneReaction::Idle
         }
+    }
+
+    fn refresh_theme(&mut self) -> SceneReaction {
+        let theme = theme_for(self.forced_theme, self.settings.theme, self.system_dark);
+        if theme == self.theme {
+            return SceneReaction::Idle;
+        }
+        self.theme = theme;
+        self.rebuild_internal_pages();
+        SceneReaction::Redraw
+    }
+
+    fn apply_requested_settings(&mut self, url: &Url) {
+        if url.path() != "settings" {
+            return;
+        }
+        let Some(choice) = query_value(url, "theme").and_then(|key| ThemeChoice::from_key(&key))
+        else {
+            return;
+        };
+        self.settings.theme = choice;
+        if let Some(path) = settings_path()
+            && let Err(error) = save_settings(&path, &self.settings)
+        {
+            eprintln!("cannot save the settings: {error}");
+        }
+        self.refresh_theme();
     }
 
     fn secondary_click(&mut self, x: f32, y: f32) -> SceneReaction {
@@ -882,9 +934,12 @@ impl PageScene {
 
 impl RenderScene for PageScene {
     fn render(&mut self, canvas: &mut Canvas) {
+        let frame_started = Instant::now();
         self.viewport_width = canvas.width() as f32;
         self.viewport_height = (canvas.height() as f32 - CHROME_HEIGHT).max(0.0);
         self.layout_for(canvas.width());
+        let layout_time = frame_started.elapsed();
+        let mut paint_time = Duration::ZERO;
         if let Some(metrics) = self.metrics() {
             if let Some(fragment) = self.pending_fragment.take()
                 && let Some(offset) = self.fragment_offset(&fragment)
@@ -895,7 +950,9 @@ impl RenderScene for PageScene {
                 self.scroll.scroll_to(scroll, metrics);
             }
             self.scroll.clamp(metrics);
+            let paint_started = Instant::now();
             self.paint_page(canvas, metrics);
+            paint_time = paint_started.elapsed();
         } else {
             clear(canvas, Rgba::opaque(255, 255, 255));
         }
@@ -935,19 +992,19 @@ impl RenderScene for PageScene {
                 lift,
             );
         }
+        if self.logs_frames {
+            eprintln!(
+                "frame {:.1} ms (layout {:.1}, page {:.1})",
+                frame_started.elapsed().as_secs_f32() * 1000.0,
+                layout_time.as_secs_f32() * 1000.0,
+                paint_time.as_secs_f32() * 1000.0
+            );
+        }
     }
 
     fn set_dark(&mut self, dark: bool) -> SceneReaction {
-        if self.forced_theme.is_some() {
-            return SceneReaction::Idle;
-        }
-        let theme = ThemeKind::from_dark(dark);
-        if theme == self.theme {
-            return SceneReaction::Idle;
-        }
-        self.theme = theme;
-        self.rebuild_internal_pages();
-        SceneReaction::Redraw
+        self.system_dark = dark;
+        self.refresh_theme()
     }
 
     fn set_maximized(&mut self, maximized: bool) -> SceneReaction {

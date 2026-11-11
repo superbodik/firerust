@@ -1,4 +1,5 @@
 use fr_dom::tree::shared_document::SharedDocument;
+use fr_js::log::report_script_error::report_script_error;
 use fr_js::runtime::js_runtime::JsRuntime;
 use fr_security::fetch::resource_kind::ResourceKind;
 use fr_security::guard::page_guard::PageGuard;
@@ -29,7 +30,7 @@ pub fn start_scripts(
     let guard = PageGuard::new(&document.borrow(), url);
     let inline_allowed = guard.allows_inline(ResourceKind::Script);
     if !inline_allowed && let Err(error) = runtime.forbid_inline_handlers() {
-        eprintln!("script error: {error}");
+        report_script_error(&error);
     }
     let scripts = collect_scripts(&document.borrow(), url);
     for script in scripts {
@@ -53,12 +54,12 @@ pub fn start_scripts(
             continue;
         };
         if let Err(error) = runtime.run_script(&text) {
-            eprintln!("script error: {error}");
+            report_script_error(&error);
         }
     }
     for event in ["DOMContentLoaded", "load"] {
         if let Err(error) = runtime.fire_event(event) {
-            eprintln!("script error: {error}");
+            report_script_error(&error);
         }
     }
     flush_console(&mut runtime);

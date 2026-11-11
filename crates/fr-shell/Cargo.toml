@@ -13,6 +13,7 @@ fr-geom.workspace = true
 fr-icons.workspace = true
 fr-theme.workspace = true
 fr-passwords.workspace = true
+fr-settings.workspace = true
 fr-js.workspace = true
 fr-layout.workspace = true
 fr-mem.workspace = true

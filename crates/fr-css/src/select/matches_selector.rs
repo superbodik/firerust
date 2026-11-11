@@ -5,6 +5,7 @@ use fr_dom::tree::document::Document;
 
 use crate::select::combinator::Combinator;
 use crate::select::matches_compound::matches_compound;
+use crate::select::previous_element::previous_element;
 use crate::select::selector::Selector;
 use crate::select::selector_part::SelectorPart;
 
@@ -29,6 +30,14 @@ fn matches_parts(document: &Document, element: NodeId, parts: &[SelectorPart]) -
             parent_element(document, ancestor)
         })
         .any(|ancestor| matches_parts(document, ancestor, rest)),
+        Combinator::NextSibling => previous_element(document, element)
+            .is_some_and(|sibling| matches_parts(document, sibling, rest)),
+        Combinator::SubsequentSibling => {
+            successors(previous_element(document, element), |&sibling| {
+                previous_element(document, sibling)
+            })
+            .any(|sibling| matches_parts(document, sibling, rest))
+        }
     }
 }
 

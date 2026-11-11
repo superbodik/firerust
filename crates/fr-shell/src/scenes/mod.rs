@@ -26,6 +26,7 @@ pub mod refresh_active;
 pub mod request_for;
 pub mod run_due_timers;
 pub mod tab_icon;
+pub mod theme_for;
 pub mod timer_delay;
 pub mod write_control_text;
 pub mod zoom_key;

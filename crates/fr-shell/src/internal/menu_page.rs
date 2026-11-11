@@ -15,6 +15,10 @@ fn destination(href: &str, label: &str, hint: &str) -> Row {
 }
 
 pub fn menu_page(css: &str) -> String {
+    let browser = group_html(&[
+        destination("about:settings", "Settings", "theme and folders"),
+        destination("about:console", "Console", "script messages and errors"),
+    ]);
     let data = group_html(&[
         Row::link(
             "about:bookmarks",
@@ -56,6 +60,7 @@ pub fn menu_page(css: &str) -> String {
         &format!(
             "<h1>Menu</h1>\
              <p class=\"lede\">Everything lives behind these pages. The keys work anywhere.</p>\
+             <h2>Browser</h2>{browser}\
              <h2>Your data</h2>{data}\
              <h2>Bring it over from another browser</h2>{import}\
              <h2>Keys</h2>{keys}"

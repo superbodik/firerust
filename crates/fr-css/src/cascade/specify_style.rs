@@ -1,12 +1,19 @@
+use std::rc::Rc;
+
 use fr_dom::node::element_data::ElementData;
 use fr_dom::node::node_id::NodeId;
 use fr_dom::tree::document::Document;
 
 use crate::cascade::candidate::Candidate;
+use crate::cascade::custom_properties::CustomProperties;
 use crate::cascade::origin::Origin;
 use crate::cascade::presentational_hints::presentational_hints;
+use crate::cascade::rule_index::RuleIndex;
 use crate::cascade::specified_style::SpecifiedStyle;
+use crate::cascade::substitute_vars::substitute_vars;
+use crate::parse::declaration::Declaration;
 use crate::parse::parse_inline_style::parse_inline_style;
+use crate::parse::parse_property_text::parse_property_text;
 use crate::parse::rule::Rule;
 use crate::select::matches_selector::matches_selector;
 use crate::select::selector::Selector;
@@ -18,7 +25,9 @@ pub fn specify_style(
     id: NodeId,
     data: &ElementData,
     rules: &[(Origin, &Rule)],
-) -> SpecifiedStyle {
+    index: &RuleIndex,
+    inherited: &Rc<CustomProperties>,
+) -> (SpecifiedStyle, Rc<CustomProperties>) {
     let inline = data
         .attribute("style")
         .map(parse_inline_style)
@@ -32,7 +41,8 @@ pub fn specify_style(
         });
     }
 
-    for (order, (origin, rule)) in rules.iter().enumerate() {
+    for order in index.candidates(data) {
+        let (origin, rule) = &rules[order];
         let Some(specificity) = rule
             .selectors
             .iter()
@@ -63,9 +73,43 @@ pub fn specify_style(
     }
 
     candidates.sort_by_key(|candidate| candidate.key);
+    let vars = collect_custom_properties(&candidates, inherited);
     let mut specified = SpecifiedStyle::default();
     for candidate in &candidates {
-        specified.apply(candidate.declaration);
+        match candidate.declaration {
+            Declaration::Custom(..) => {}
+            Declaration::Deferred(property, raw) => {
+                let Some(text) = substitute_vars(raw, &vars) else {
+                    continue;
+                };
+                for declaration in parse_property_text(property, &text).unwrap_or_default() {
+                    specified.apply(&declaration);
+                }
+            }
+            other => specified.apply(other),
+        }
     }
-    specified
+    (specified, vars)
+}
+
+fn collect_custom_properties(
+    candidates: &[Candidate<'_>],
+    inherited: &Rc<CustomProperties>,
+) -> Rc<CustomProperties> {
+    let mut own: Option<CustomProperties> = None;
+    for candidate in candidates {
+        let Declaration::Custom(name, value) = candidate.declaration else {
+            continue;
+        };
+        let map = own.get_or_insert_with(|| (**inherited).clone());
+        match substitute_vars(value, map) {
+            Some(resolved) => {
+                map.insert(name.clone(), resolved.into());
+            }
+            None => {
+                map.remove(name);
+            }
+        }
+    }
+    own.map_or_else(|| Rc::clone(inherited), Rc::new)
 }

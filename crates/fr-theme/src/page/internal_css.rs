@@ -40,6 +40,7 @@ pub fn internal_css(palette: &Palette) -> String {
          .title span {{ color: {accent} }} \
          .subtitle {{ color: {muted}; margin: 0 0 40px 0; font-size: 17px }} \
          .danger {{ color: {link} }} \
+         .mark {{ color: {accent} }} \
          input, select {{ background-color: {field}; color: {text}; border: 1px solid {border}; \
                           border-radius: 6px }} \
          input[type=\"radio\"] {{ border-radius: 50% }} \

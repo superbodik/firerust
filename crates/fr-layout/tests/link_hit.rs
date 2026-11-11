@@ -101,3 +101,63 @@ fn a_click_on_a_non_text_box_is_not_a_link() {
 
     assert_eq!(link_for(&page, "d", 5.0), None);
 }
+
+fn link_at_box(
+    page: &Laid,
+    wanted: &str,
+    dx: f32,
+    dy: f32,
+) -> Option<fr_dom::node::node_id::NodeId> {
+    let rect = page.boxed(wanted).border_box;
+    link_at(
+        &page.tree.root,
+        &mut TextEngine::new(),
+        &page.document,
+        Point::new(rect.origin.x + dx, rect.origin.y + dy),
+    )
+}
+
+#[test]
+fn the_empty_padding_of_a_block_link_is_part_of_the_link() {
+    let page = layout(
+        "<a id=l href='/x' style='display: block; padding: 20px; width: 200px'>Card</a>",
+        "",
+        800.0,
+    );
+
+    assert_eq!(link_at_box(&page, "l", 150.0, 5.0), Some(page.id("l")));
+    assert_eq!(link_at_box(&page, "l", 190.0, 30.0), Some(page.id("l")));
+}
+
+#[test]
+fn a_flex_row_that_is_a_link_is_clickable_across_its_whole_width() {
+    let page = layout(
+        "<a id=l class=row href='/x'><span>Left</span><span>Right</span></a>",
+        "a.row { display: flex; justify-content: space-between; width: 400px }",
+        800.0,
+    );
+
+    assert_eq!(link_at_box(&page, "l", 200.0, 6.0), Some(page.id("l")));
+}
+
+#[test]
+fn an_image_inside_a_link_is_part_of_the_link() {
+    let page = layout(
+        "<a id=l href='/x'><div id=d style='width: 100px; height: 60px; background-color: #ccc'></div></a>",
+        "",
+        800.0,
+    );
+
+    assert_eq!(link_at_box(&page, "d", 50.0, 30.0), Some(page.id("l")));
+}
+
+#[test]
+fn the_space_next_to_a_block_without_a_link_is_not_a_link() {
+    let page = layout(
+        "<div id=d style='width: 100px; height: 40px'>plain</div>",
+        "",
+        800.0,
+    );
+
+    assert_eq!(link_at_box(&page, "d", 50.0, 30.0), None);
+}
