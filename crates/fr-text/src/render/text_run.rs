@@ -11,4 +11,6 @@ pub struct TextRun<'a> {
     pub font_weight: u16,
     pub is_italic: bool,
     pub family: TextFamily,
+    pub is_underlined: bool,
+    pub is_struck: bool,
 }

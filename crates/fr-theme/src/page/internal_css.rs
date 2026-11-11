@@ -17,6 +17,7 @@ pub fn internal_css(palette: &Palette) -> String {
          h2 {{ font-size: 12px; font-weight: bold; margin: 34px 0 8px 2px; color: {muted} }} \
          p {{ margin: 8px 0; line-height: 1.55 }} \
          a {{ color: {link} }} \
+         .group a, a.row {{ text-decoration: none }} \
          ul {{ margin: 0; padding: 0 }} \
          .lede {{ color: {muted}; margin: 0 0 26px 0 }} \
          .note {{ color: {muted} }} \

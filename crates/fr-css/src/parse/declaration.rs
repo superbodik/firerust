@@ -12,6 +12,7 @@ use crate::value::length::Length;
 use crate::value::line_height::LineHeight;
 use crate::value::side::Side;
 use crate::value::text_align::TextAlign;
+use crate::value::text_decoration::TextDecoration;
 use crate::value::white_space::WhiteSpace;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,6 +25,7 @@ pub enum Declaration {
     FontFamily(FontFamily),
     LineHeight(LineHeight),
     TextAlign(TextAlign),
+    TextDecoration(TextDecoration),
     WhiteSpace(WhiteSpace),
     Display(Display),
     BoxSizing(BoxSizing),

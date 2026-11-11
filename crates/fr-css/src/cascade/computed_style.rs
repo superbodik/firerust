@@ -11,6 +11,7 @@ use crate::value::length::{Length, ROOT_FONT_SIZE};
 use crate::value::line_height::LineHeight;
 use crate::value::size_style::SizeStyle;
 use crate::value::text_align::TextAlign;
+use crate::value::text_decoration::TextDecoration;
 use crate::value::white_space::WhiteSpace;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -24,6 +25,7 @@ pub struct ComputedStyle {
     pub font_family: FontFamily,
     pub line_height: LineHeight,
     pub text_align: TextAlign,
+    pub text_decoration: TextDecoration,
     pub white_space: WhiteSpace,
     pub box_sizing: BoxSizing,
     pub size: SizeStyle,
@@ -48,6 +50,7 @@ impl ComputedStyle {
             font_family: FontFamily::SansSerif,
             line_height: LineHeight::Normal,
             text_align: TextAlign::Left,
+            text_decoration: TextDecoration::NONE,
             white_space: WhiteSpace::Normal,
             box_sizing: BoxSizing::ContentBox,
             size: SizeStyle::default(),

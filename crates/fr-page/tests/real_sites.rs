@@ -5,13 +5,23 @@ use std::path::Path;
 use fr_page::load::load_page::load_page;
 use support::{layout_of, texts};
 
-const SITES: [&str; 6] = [
+const SITES: [&str; 16] = [
     "https://example.com",
     "https://example.org",
     "http://info.cern.ch",
     "https://text.npr.org",
     "https://news.ycombinator.com",
     "https://lobste.rs",
+    "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+    "https://ru.wikipedia.org/wiki/Rust",
+    "https://www.rust-lang.org",
+    "https://doc.rust-lang.org/book/",
+    "https://developer.mozilla.org/en-US/",
+    "https://github.com",
+    "https://habr.com/ru/articles/",
+    "https://www.bbc.com/news",
+    "https://old.reddit.com",
+    "https://www.wikipedia.org",
 ];
 
 #[test]

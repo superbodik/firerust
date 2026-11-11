@@ -20,6 +20,7 @@ use crate::parse::parse_justify_content::parse_justify_content;
 use crate::parse::parse_length::parse_length;
 use crate::parse::parse_line_height::parse_line_height;
 use crate::parse::parse_text_align::parse_text_align;
+use crate::parse::parse_text_decoration::parse_text_decoration;
 use crate::parse::parse_white_space::parse_white_space;
 use crate::parse::side_from_name::side_from_name;
 use crate::value::corner::Corner;
@@ -38,6 +39,9 @@ pub fn parse_property(name: &str, parser: &mut Parser<'_>) -> Option<Vec<Declara
         "font-family" => single(parse_font_family(parser), Declaration::FontFamily),
         "line-height" => single(parse_line_height(parser), Declaration::LineHeight),
         "text-align" => single(parse_text_align(parser), Declaration::TextAlign),
+        "text-decoration" | "text-decoration-line" => {
+            single(parse_text_decoration(parser), Declaration::TextDecoration)
+        }
         "white-space" => single(parse_white_space(parser), Declaration::WhiteSpace),
         "display" => single(parse_display(parser), Declaration::Display),
         "box-sizing" => single(parse_box_sizing(parser), Declaration::BoxSizing),

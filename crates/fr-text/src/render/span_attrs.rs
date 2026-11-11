@@ -1,4 +1,4 @@
-use cosmic_text::{Attrs, Color as GlyphColor, Family, Style, Weight};
+use cosmic_text::{Attrs, Color as GlyphColor, Family, Style, UnderlineStyle, Weight};
 
 use crate::render::line_metrics::metrics_for;
 use crate::render::text_family::TextFamily;
@@ -15,7 +15,7 @@ pub fn span_attrs(run: &TextRun<'_>) -> Attrs<'static> {
     } else {
         Style::Normal
     };
-    Attrs::new()
+    let mut attrs = Attrs::new()
         .family(family)
         .style(style)
         .color(GlyphColor::rgba(
@@ -25,5 +25,12 @@ pub fn span_attrs(run: &TextRun<'_>) -> Attrs<'static> {
             run.color.a,
         ))
         .weight(Weight(run.font_weight))
-        .metrics(metrics_for(run.font_size, run.line_height))
+        .metrics(metrics_for(run.font_size, run.line_height));
+    if run.is_underlined {
+        attrs = attrs.underline(UnderlineStyle::Single);
+    }
+    if run.is_struck {
+        attrs = attrs.strikethrough();
+    }
+    attrs
 }

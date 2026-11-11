@@ -11,5 +11,7 @@ pub fn toolbar_run(text: &str, font_size: f32, color: Rgba) -> TextRun<'_> {
         font_weight: 400,
         is_italic: false,
         family: TextFamily::SansSerif,
+        is_underlined: false,
+        is_struck: false,
     }
 }

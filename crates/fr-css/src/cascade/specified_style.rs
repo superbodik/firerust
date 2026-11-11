@@ -13,6 +13,7 @@ use crate::value::justify_content::JustifyContent;
 use crate::value::length::Length;
 use crate::value::line_height::LineHeight;
 use crate::value::text_align::TextAlign;
+use crate::value::text_decoration::TextDecoration;
 use crate::value::white_space::WhiteSpace;
 
 #[derive(Debug, Clone, Default)]
@@ -26,6 +27,7 @@ pub struct SpecifiedStyle {
     pub font_family: Option<FontFamily>,
     pub line_height: Option<LineHeight>,
     pub text_align: Option<TextAlign>,
+    pub text_decoration: Option<TextDecoration>,
     pub white_space: Option<WhiteSpace>,
     pub box_sizing: Option<BoxSizing>,
     pub width: Option<Length>,
@@ -60,6 +62,7 @@ impl SpecifiedStyle {
             Declaration::FontFamily(value) => self.font_family = Some(*value),
             Declaration::LineHeight(value) => self.line_height = Some(*value),
             Declaration::TextAlign(value) => self.text_align = Some(*value),
+            Declaration::TextDecoration(value) => self.text_decoration = Some(*value),
             Declaration::WhiteSpace(value) => self.white_space = Some(*value),
             Declaration::Display(value) => self.display = Some(*value),
             Declaration::BoxSizing(value) => self.box_sizing = Some(*value),

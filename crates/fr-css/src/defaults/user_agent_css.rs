@@ -27,6 +27,7 @@ pre { white-space: pre }
 th, caption, center { text-align: center }
 hr { margin: 8px 0; border-top-width: 1px; border-color: #999999 }
 a { color: #0000ee }
+a[href] { text-decoration: underline }
 input, textarea, select, button { color: #141414; border-radius: 4px }
 button, input[type=\"submit\"], input[type=\"button\"], input[type=\"reset\"] { border-radius: 5px }
 input[type=\"checkbox\"] { border-radius: 3px }

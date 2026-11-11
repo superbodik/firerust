@@ -21,7 +21,6 @@ fn parse_rule(parser: &mut Parser<'_>) -> Option<Rule> {
     let start = parser.position();
     let mut is_at_rule = false;
     loop {
-        let before = parser.position();
         let token = parser.next().ok()?.clone();
         match token {
             Token::AtKeyword(_) => is_at_rule = true,
@@ -30,7 +29,11 @@ fn parse_rule(parser: &mut Parser<'_>) -> Option<Rule> {
                 if is_at_rule {
                     return None;
                 }
-                let prelude = parser.slice(start..before).to_owned();
+                let prelude = parser
+                    .slice_from(start)
+                    .trim_end()
+                    .trim_end_matches('{')
+                    .to_owned();
                 let declarations = parser
                     .parse_nested_block::<_, _, ()>(|inner| Ok(parse_declaration_block(inner)))
                     .ok()?;

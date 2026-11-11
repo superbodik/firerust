@@ -27,6 +27,7 @@ pub fn compute_style(specified: &SpecifiedStyle, parent: &ComputedStyle) -> Comp
         font_family: specified.font_family.unwrap_or(parent.font_family),
         line_height: specified.line_height.unwrap_or(parent.line_height),
         text_align: specified.text_align.unwrap_or(parent.text_align),
+        text_decoration: specified.text_decoration.unwrap_or(parent.text_decoration),
         white_space: specified.white_space.unwrap_or(parent.white_space),
         box_sizing: specified.box_sizing.unwrap_or_default(),
         size: SizeStyle {

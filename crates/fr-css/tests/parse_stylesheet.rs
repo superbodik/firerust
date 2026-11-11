@@ -56,10 +56,10 @@ fn an_unsupported_selector_drops_only_itself() {
 #[test]
 fn a_rule_with_only_unsupported_selectors_is_dropped() {
     let sheet = parse_stylesheet(
-        "a:hover { color: red } input[type=text] { color: red } p { color: blue }",
+        "a:hover { color: red } input[type=text] { color: red } p:first-child:hover { color: red } p { color: blue }",
     );
 
-    assert_eq!(sheet.rules.len(), 1);
+    assert_eq!(sheet.rules.len(), 2);
 }
 
 #[test]
@@ -80,4 +80,31 @@ fn an_unterminated_block_does_not_hang() {
     let sheet = parse_stylesheet("p { color: red");
 
     assert_eq!(sheet.rules.len(), 1);
+}
+
+#[test]
+fn a_rule_with_an_attribute_selector_is_kept() {
+    let sheet = parse_stylesheet("a[href] { color: red } input[type=\"text\"], p { color: blue }");
+
+    assert_eq!(sheet.rules.len(), 2);
+    assert_eq!(sheet.rules[0].selectors.len(), 1);
+    assert_eq!(sheet.rules[1].selectors.len(), 2);
+}
+
+#[test]
+fn a_rule_with_a_functional_pseudo_class_is_kept_or_dropped_whole() {
+    let sheet =
+        parse_stylesheet("p { color: red } li:nth-child(2) { color: blue } h1 { color: green }");
+
+    assert!(sheet.rules.len() >= 2);
+    assert_eq!(sheet.rules[0].selectors.len(), 1);
+}
+
+#[test]
+fn rules_after_an_at_rule_block_still_parse() {
+    let sheet = parse_stylesheet(
+        "@media (min-width: 600px) { p { color: red } } a[href] { color: blue } b { color: green }",
+    );
+
+    assert_eq!(sheet.rules.len(), 2);
 }

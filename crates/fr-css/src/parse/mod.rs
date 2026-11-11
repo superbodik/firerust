@@ -24,6 +24,7 @@ pub mod parse_line_height;
 pub mod parse_property;
 pub mod parse_stylesheet;
 pub mod parse_text_align;
+pub mod parse_text_decoration;
 pub mod parse_white_space;
 pub mod rule;
 pub mod side_from_name;

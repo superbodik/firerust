@@ -15,6 +15,8 @@ pub struct LayoutRun {
     pub font_weight: u16,
     pub is_italic: bool,
     pub family: TextFamily,
+    pub is_underlined: bool,
+    pub is_struck: bool,
     pub owner: Option<NodeId>,
 }
 
@@ -32,6 +34,8 @@ impl LayoutRun {
                 FontFamily::Serif => TextFamily::Serif,
                 FontFamily::Monospace => TextFamily::Monospace,
             },
+            is_underlined: style.text_decoration.underline,
+            is_struck: style.text_decoration.line_through,
             owner: None,
         }
     }
@@ -48,6 +52,8 @@ impl LayoutRun {
             && self.font_weight == other.font_weight
             && self.is_italic == other.is_italic
             && self.family == other.family
+            && self.is_underlined == other.is_underlined
+            && self.is_struck == other.is_struck
             && self.owner == other.owner
     }
 
@@ -60,6 +66,8 @@ impl LayoutRun {
             font_weight: self.font_weight,
             is_italic: self.is_italic,
             family: self.family,
+            is_underlined: self.is_underlined,
+            is_struck: self.is_struck,
         }
     }
 }
