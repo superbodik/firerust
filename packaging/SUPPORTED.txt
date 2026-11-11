@@ -1,0 +1,37 @@
+What works and what does not
+============================
+
+Works
+-----
+- http and https pages, redirects, cookies, gzip and brotli, page encodings
+  such as windows-1251, forms with GET and POST
+- HTML and CSS for typical articles, blogs, documentation and link lists:
+  selectors with attributes, pseudo-classes and sibling combinators, custom
+  properties var(), media queries, flexbox, tables, rounded corners, lists,
+  images (PNG, JPEG, GIF, WebP)
+- JavaScript for simple pages: DOM, events, timers, localStorage,
+  location changes and window.open
+- Plain text, JSON and picture files open as pages; other files are saved to
+  your Downloads folder
+- Tabs, history, bookmarks (import from Chrome, Edge, Brave, Vivaldi, Opera
+  and any browser's HTML export), saved passwords (import from CSV)
+- Light and dark themes, page zoom per site
+
+Does not work yet
+-----------------
+- CSS: calc(), position (absolute, fixed), float, grid, overflow, opacity,
+  transforms, animations, web fonts, @import, ::before and ::after
+- SVG pictures on pages, video and audio, canvas, iframes, WebGL
+- Large single-page apps (YouTube, social networks, web mail, maps) do not
+  render correctly
+- Printing, find in page, extensions, sync, a download manager with progress
+
+Safety limits
+-------------
+- Pages from the web cannot open files on your disk, and https pages cannot
+  load plain http parts (local addresses are allowed)
+- A basic Content-Security-Policy from a meta tag is understood; nonces and
+  hashes are not
+- Passwords are encrypted on disk with your Windows account but are readable
+  in memory while the browser runs
+- This is an early browser. Do not use it for banking, payments or mail.

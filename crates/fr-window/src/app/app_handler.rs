@@ -156,11 +156,16 @@ impl<S: RenderScene> ApplicationHandler for AppHandler<S> {
         if self.window.is_some() {
             return;
         }
+        let icon = self.config.icon.as_ref().and_then(|icon| {
+            winit::window::Icon::from_rgba(icon.rgba.clone(), icon.width, icon.height).ok()
+        });
         let attributes = Window::default_attributes()
             .with_title(self.config.title.clone())
             .with_inner_size(LogicalSize::new(self.config.width, self.config.height))
             .with_decorations(false)
-            .with_undecorated_shadow(true);
+            .with_undecorated_shadow(true)
+            .with_window_icon(icon.clone())
+            .with_taskbar_icon(icon);
         let window = match event_loop.create_window(attributes) {
             Ok(window) => Arc::new(window),
             Err(error) => {

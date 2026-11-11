@@ -48,15 +48,20 @@ The goal is simple: open simple and medium-complexity sites while using noticeab
 - Networking: page character sets (windows-1251, KOI8-R and the rest of the web set), gzip and brotli, redirects, cookies, POST requests
 - Forms: text fields, passwords, checkboxes, radio buttons, selects, text areas and buttons you can click and type into, Tab between them, GET and POST submission, `input`, `change` and `submit` events for scripts
 - JavaScript on [Boa](https://github.com/boa-dev/boa): inline and external scripts, `DOMContentLoaded` and `load`, `document` and element APIs (queries, creating and moving nodes, `textContent`, `innerHTML`, attributes, `classList`, `style`), events with capture and bubbling phases, `onclick` attributes and properties, `setTimeout`, `setInterval`, `requestAnimationFrame`, `console`, `localStorage`
+- Links of every kind: `#anchor` jumps without reloading, `target="_blank"`, Ctrl+click and middle click open a new tab, `mailto:` and `tel:` go to the system (message fields only), the destination of a hovered link shows at the bottom, whole block links and linked images are clickable, and `location.href`, `location.assign` and `window.open` work from scripts
+- Files: plain text, JSON, XML and CSS open as readable pages, PNG / JPEG / GIF / WebP files open as a picture, everything else (archives, PDFs, `Content-Disposition: attachment`) is saved to your Downloads folder
+- More CSS: `border-radius`, `text-decoration`, `accent-color`, custom properties with `var()`, `@media` (for a desktop window), `@supports`, `@layer`, attribute selectors, `:not()`, `:nth-child()`, `:first-child`, `:link`, `:root` and sibling combinators
+- `about:settings` (theme, where your files live) and `about:console` (what scripts printed and which ones failed)
+- Large pages lay out fast: Wikipedia articles take a quarter of a second in a release build
 - Deeply nested documents are safe: layout runs on a large stack and the tree is freed iteratively
 
-Pages that load and lay out: Hacker News, example.com, CERN, NPR, Lobsters.
+Pages that load and lay out well: Hacker News, example.com, CERN, NPR, Lobsters, documentation sites. Pages that rely on `float`, `position` or CSS grid (Wikipedia, rust-lang.org) open but look broken.
 
 Keys: `Ctrl+L` or `F6` focus the address bar, `Enter` opens, `Esc` cancels, `Alt+Left` and `Alt+Right` go back and forward, `F5` or `Ctrl+R` reloads, `Ctrl+T` opens a tab, `Ctrl+W` closes it, `Ctrl+Tab` and `Ctrl+Shift+Tab` switch tabs, `Ctrl+M` toggles the memory panel, `Ctrl+Plus`, `Ctrl+Minus`, `Ctrl+0` and `Ctrl+Wheel` zoom the page (25% to 500%, remembered per site). Shortcuts use physical keys, so they work on any keyboard layout.
 
 ## Quick start
 
-Requirements: Rust 1.96 (MSVC toolchain), Windows 11.
+Requirements: Rust 1.96 (MSVC toolchain), Windows 11. To make a zip with a release build run `packaging/build-release.ps1`; it writes `dist/firerust-<version>-windows-x64.zip` together with a short guide and the list of what works.
 
 ```
 git clone https://github.com/superbodik/firerust.git
@@ -117,6 +122,8 @@ fr-shell ─ binary: entry point and scenes
  ├─ fr-theme     light and dark palettes and page styles
  ├─ fr-bookmarks bookmark list, file storage and import from other browsers
  ├─ fr-passwords saved logins in an encrypted file, CSV import
+ ├─ fr-download file names and saving downloads
+ ├─ fr-settings  theme choice and the settings file
  ├─ fr-dpapi    Windows DPAPI wrapper, the only crate with unsafe code
  ├─ fr-security page safety rules: mixed content, local files, content security policy
  ├─ fr-js       JavaScript runtime on Boa: DOM, events, timers
@@ -153,7 +160,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-About 700 tests pass. One network test is run manually:
+About 880 tests pass. One network test is run manually:
 
 ```
 cargo test -p fr-page --test real_sites -- --ignored
@@ -174,7 +181,7 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 | 6 | Tabs and memory | done |
 | 7 | JavaScript | done |
 | 8 | Network and forms | done |
-| 9 | Security and polish | next |
+| 9 | Security and polish | in progress |
 
 ## Known limitations
 
@@ -182,13 +189,13 @@ Code rules: no comments in code, small files grouped in folders, no `unwrap` or 
 - Content security policy is read only from the meta tag, not from response headers; no nonces or hashes
 - Form controls take a line of their own, a select changes on click without a drop-down, no file upload, no `reset` button, no form validation; cookies live only in memory; going back after a POST asks the address again with GET
 - Scripts and the final page build still run on the window thread, so a heavy page can stall the window while it is built; several start addresses after the first load one after another
-- Page zoom is a straight scale of the drawing: thin borders can look soft at fractional zoom levels; links to `#fragment` do not scroll to the anchor
+- Page zoom is a straight scale of the drawing: thin borders can look soft at fractional zoom levels
 - Back and forward reload the page, there is no page cache yet
 - The last tab cannot be closed
-- Inline images become their own blocks; margins, padding and borders on inline elements are ignored; no underline
-- No `float` or `position`
+- Inline images become their own blocks; margins, padding and borders on inline elements are ignored
+- No `float`, `position`, `grid`, `overflow`, `opacity`, `calc()`, web fonts or `::before` and `::after`; `@media` is judged for a fixed desktop window, not the real one; images cannot have rounded corners yet
+- Downloads go through memory (up to 256 MiB) and show no progress; the `download` attribute is not used
 - Tables have no `valign` or `border-spacing`
-- UTF-8 pages only
 - JavaScript: no `fetch` or `XMLHttpRequest`, no `document.write`, scripts see no element sizes, only clicks and timers reach pages (no hover or keyboard events yet), the whole document is restyled after every change
 
 ## Built with

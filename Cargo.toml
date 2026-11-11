@@ -53,3 +53,8 @@ fr-test-server = { version = "0.0.1", path = "tools/test-server" }
 fr-text = { version = "0.0.1", path = "crates/fr-text" }
 fr-ui = { version = "0.0.1", path = "crates/fr-ui" }
 fr-window = { version = "0.0.1", path = "crates/fr-window" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true
