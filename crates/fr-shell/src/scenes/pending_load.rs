@@ -3,8 +3,8 @@ use std::thread;
 use std::time::Instant;
 
 use fr_net::load::request::Request;
+use fr_page::prefetch::fetched::Fetched;
 use fr_page::prefetch::prefetch_request::prefetch_request;
-use fr_page::prefetch::prefetched_page::PrefetchedPage;
 use fr_tab::model::tab_id::TabId;
 use url::Url;
 
@@ -13,7 +13,7 @@ use crate::scenes::load_target::LoadTarget;
 const WORKER_STACK_BYTES: usize = 16 * 1024 * 1024;
 
 pub struct PendingLoad {
-    receiver: Receiver<Result<PrefetchedPage, String>>,
+    receiver: Receiver<Result<Fetched, String>>,
     pub target: LoadTarget,
     pub tab: TabId,
     pub url: Url,
@@ -42,7 +42,7 @@ impl PendingLoad {
         }
     }
 
-    pub fn poll(&self) -> Option<Result<PrefetchedPage, String>> {
+    pub fn poll(&self) -> Option<Result<Fetched, String>> {
         match self.receiver.try_recv() {
             Ok(outcome) => Some(outcome),
             Err(TryRecvError::Empty) => None,

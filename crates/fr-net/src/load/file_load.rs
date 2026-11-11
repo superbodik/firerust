@@ -11,6 +11,7 @@ pub fn file_load(url: &Url) -> Result<Response, NetError> {
         url: url.clone(),
         status: 200,
         content_type: guess_content_type(&path),
+        content_disposition: None,
         body,
     })
 }

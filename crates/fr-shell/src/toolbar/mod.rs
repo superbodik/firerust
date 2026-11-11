@@ -1,5 +1,6 @@
 pub mod draw_icon;
 pub mod draw_icon_button;
+pub mod draw_link_status;
 pub mod draw_load_bar;
 pub mod draw_memory_bar;
 pub mod draw_notice;

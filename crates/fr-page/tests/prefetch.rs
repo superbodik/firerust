@@ -15,7 +15,10 @@ fn pages_dir() -> PathBuf {
 
 fn prefetched(name: &str) -> fr_page::load::page::Page {
     let url = resolve_address(name, &pages_dir()).expect("address");
-    let page = prefetch_request(&Request::get(url)).expect("prefetch");
+    let page = prefetch_request(&Request::get(url))
+        .expect("prefetch")
+        .into_page()
+        .expect("a page");
     build_prefetched(page)
 }
 

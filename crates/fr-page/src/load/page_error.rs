@@ -8,6 +8,7 @@ use fr_net::load::net_error::NetError;
 pub enum PageError {
     Address(AddressError),
     Load(NetError),
+    IsDownload,
 }
 
 impl fmt::Display for PageError {
@@ -15,6 +16,7 @@ impl fmt::Display for PageError {
         match self {
             Self::Address(error) => error.fmt(formatter),
             Self::Load(error) => error.fmt(formatter),
+            Self::IsDownload => write!(formatter, "this address is a file to download"),
         }
     }
 }
@@ -24,6 +26,7 @@ impl Error for PageError {
         match self {
             Self::Address(error) => Some(error),
             Self::Load(error) => Some(error),
+            Self::IsDownload => None,
         }
     }
 }

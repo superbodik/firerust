@@ -6,15 +6,22 @@ use fr_dom::node::node_id::NodeId;
 use fr_geom::color::rgba::Rgba;
 use fr_geom::geometry::point::Point;
 use fr_geom::geometry::rect::Rect;
+use fr_layout::anchor::anchor_top::anchor_top;
 use fr_layout::control::control_kind::ControlKind;
 use fr_layout::page::layout_page::layout_page_with_focus;
 use fr_mem::meter::memory_meter::MemoryMeter;
+use fr_net::address::percent_decode::percent_decode;
 use fr_net::load::request::Request;
+use fr_net::load::response::Response;
 use fr_page::images::shared_image_cache::shared_image_bytes;
+use fr_page::link::classify_link::classify_link;
+use fr_page::link::link_action::LinkAction;
+use fr_page::link::same_document::is_same_document;
 use fr_page::load::blank_page::blank_page_for;
 use fr_page::load::build_page::build_prefetched;
 use fr_page::load::error_page::error_page_for;
 use fr_page::load::page::Page;
+use fr_page::prefetch::fetched::Fetched;
 use fr_paint::build::build_display_list::build_display_list;
 use fr_paint::paint::paint_display_list::paint_display_list;
 use fr_passwords::model::credential::Credential;
@@ -60,12 +67,14 @@ use crate::scenes::control_at::control_at;
 use crate::scenes::control_kind_in::control_kind_in;
 use crate::scenes::dispatch_event_to::dispatch_event_to;
 use crate::scenes::dispatch_page_click::dispatch_page_click;
+use crate::scenes::finish_download::finish_download;
 use crate::scenes::focus_key::FocusKey;
 use crate::scenes::forced_theme::forced_theme;
 use crate::scenes::form_focus::FormFocus;
 use crate::scenes::form_for::form_for;
 use crate::scenes::form_request::form_request;
 use crate::scenes::invalidate_layout::invalidate_layout;
+use crate::scenes::launch_external::launch_external;
 use crate::scenes::link_target::link_target;
 use crate::scenes::load_target::LoadTarget;
 use crate::scenes::login_to_save::login_to_save;
@@ -78,6 +87,7 @@ use crate::scenes::run_due_timers::run_due_timers;
 use crate::scenes::tab_icon::tab_icon;
 use crate::scenes::timer_delay::timer_delay;
 use crate::scenes::zoom_key::zoom_key;
+use crate::toolbar::draw_link_status::draw_link_status;
 use crate::toolbar::draw_load_bar::draw_load_bar;
 use crate::toolbar::draw_memory_bar::{MEMORY_BAR_HEIGHT, draw_memory_bar};
 use crate::toolbar::draw_notice::draw_notice;
@@ -93,6 +103,7 @@ const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 const LOAD_POLL: Duration = Duration::from_millis(33);
 const NOTICE_LIFETIME: Duration = Duration::from_secs(3);
 const SAVE_PROMPT_LIFETIME: Duration = Duration::from_secs(10);
+const DOWNLOAD_NOTICE_LIFETIME: Duration = Duration::from_secs(6);
 
 pub struct PageScene {
     tabs: TabSet,
@@ -117,6 +128,8 @@ pub struct PageScene {
     hover: ChromeHover,
     maximized: bool,
     last_strip_press: Option<Instant>,
+    pending_fragment: Option<String>,
+    hovered_link: Option<String>,
 }
 
 impl PageScene {
@@ -147,6 +160,8 @@ impl PageScene {
             hover: ChromeHover::Nothing,
             maximized: false,
             last_strip_press: None,
+            pending_fragment: None,
+            hovered_link: None,
         };
         if scene.theme != ThemeKind::Light {
             scene.rebuild_internal_pages();
@@ -188,7 +203,13 @@ impl PageScene {
         self.scroll = ScrollState::new();
         self.pending_scroll = Some(scroll);
         self.is_over_link = false;
+        self.hovered_link = None;
         self.form.forget();
+        self.pending_fragment = if scroll <= 0.0 {
+            self.tabs.active().url().fragment().map(percent_decode)
+        } else {
+            None
+        };
     }
 
     fn switch_to(&mut self, index: usize) -> SceneReaction {
@@ -278,6 +299,24 @@ impl PageScene {
         if autofill_logins(&mut self.tabs, &self.vault) {
             refresh_active(&mut self.tabs);
         }
+        self.take_script_navigation();
+    }
+
+    fn take_script_navigation(&mut self) -> Option<SceneReaction> {
+        let request = self.tabs.active_mut().content_mut()?.take_navigation()?;
+        let base = self.tabs.active().url().clone();
+        let target = request.in_new_tab.then_some("_blank");
+        let action = classify_link(&base, &request.address, target)?;
+        if let LinkAction::Open {
+            url,
+            in_new_tab: false,
+        } = &action
+            && is_same_document(url, &base)
+            && url.fragment().is_none()
+        {
+            return None;
+        }
+        Some(self.follow_link(action, false))
     }
 
     fn remember_login(&mut self, form: NodeId) {
@@ -343,7 +382,11 @@ impl PageScene {
             return false;
         }
         let page = match outcome {
-            Ok(prefetched) => build_prefetched(prefetched),
+            Ok(Fetched::Page(prefetched)) => build_prefetched(prefetched),
+            Ok(Fetched::Download(response)) => {
+                self.finish_download(&response, pending.url.scheme() == "file");
+                return true;
+            }
             Err(message) => {
                 eprintln!("cannot open {}: {message}", pending.url);
                 error_page_for(pending.url.clone(), &message, self.theme)
@@ -351,6 +394,13 @@ impl PageScene {
         };
         self.apply_page(page, pending.target);
         true
+    }
+
+    fn finish_download(&mut self, response: &Response, requested_from_disk: bool) {
+        self.address
+            .set_text(&address_text(self.tabs.active().url()));
+        let message = finish_download(response, requested_from_disk);
+        self.notice = Some(Notice::new(&message, DOWNLOAD_NOTICE_LIFETIME));
     }
 
     fn navigate(&mut self, page: Page) -> SceneReaction {
@@ -375,6 +425,15 @@ impl PageScene {
         let Some((url, scroll)) = entry.map(|entry| (entry.url.clone(), entry.scroll)) else {
             return SceneReaction::Idle;
         };
+        let stays_here =
+            !self.tabs.active().is_discarded() && is_same_document(&url, self.tabs.active().url());
+        if stays_here {
+            self.tabs.active_mut().set_url(url);
+            self.address
+                .set_text(&address_text(self.tabs.active().url()));
+            self.pending_scroll = Some(scroll);
+            return SceneReaction::Redraw;
+        }
         self.begin_request(Request::get(url), LoadTarget::Travel { scroll });
         SceneReaction::Redraw
     }
@@ -465,7 +524,7 @@ impl PageScene {
         SceneReaction::Redraw
     }
 
-    fn target_at(&mut self, x: f32, y: f32) -> Option<Url> {
+    fn target_at(&mut self, x: f32, y: f32) -> Option<LinkAction> {
         if y < CHROME_HEIGHT {
             return None;
         }
@@ -523,6 +582,9 @@ impl PageScene {
             (x / factor, (y - CHROME_HEIGHT) / factor),
         );
         let changed = refresh_active(&mut self.tabs);
+        if let Some(reaction) = self.take_script_navigation() {
+            return reaction;
+        }
         let blurred = control != self.form.control() && self.form.blur(&mut self.tabs);
         if allowed {
             if let Some(control) = control {
@@ -531,8 +593,8 @@ impl PageScene {
                 refresh_active(&mut self.tabs);
                 return reaction;
             }
-            if let Some(url) = link {
-                return self.open(url.as_str());
+            if let Some(action) = link {
+                return self.follow_link(action, false);
             }
         }
         if changed || was_focused || blurred {
@@ -540,6 +602,81 @@ impl PageScene {
         } else {
             SceneReaction::Idle
         }
+    }
+
+    fn secondary_click(&mut self, x: f32, y: f32) -> SceneReaction {
+        match self.target_at(x, y) {
+            Some(action) => self.follow_link(action, true),
+            None => SceneReaction::Idle,
+        }
+    }
+
+    fn follow_link(&mut self, action: LinkAction, force_new_tab: bool) -> SceneReaction {
+        match action {
+            LinkAction::Open { url, in_new_tab } => {
+                let request = Request::get(url);
+                if in_new_tab || force_new_tab {
+                    self.open_in_new_tab(request)
+                } else {
+                    self.open_request(Some(request))
+                }
+            }
+            LinkAction::Scroll { fragment } => self.scroll_to_fragment(&fragment),
+            LinkAction::External { url } => self.open_external(&url),
+        }
+    }
+
+    fn open_in_new_tab(&mut self, request: Request) -> SceneReaction {
+        let Some(page) = blank_page_for(self.theme) else {
+            return SceneReaction::Idle;
+        };
+        self.remember_scroll();
+        self.pending = None;
+        self.tabs.open(page);
+        self.sync_active();
+        self.begin_request(request, LoadTarget::Initial);
+        SceneReaction::Redraw
+    }
+
+    fn open_external(&mut self, url: &Url) -> SceneReaction {
+        let message = match launch_external(url) {
+            Ok(()) => "Opening it in another app",
+            Err(error) => {
+                eprintln!("cannot open {url}: {error}");
+                "Cannot open this link"
+            }
+        };
+        self.notice = Some(Notice::new(message, NOTICE_LIFETIME));
+        SceneReaction::Redraw
+    }
+
+    fn fragment_offset(&self, fragment: &str) -> Option<f32> {
+        let content = self.tabs.active().content()?;
+        let layout = content.layout.as_ref()?;
+        let found = anchor_top(&layout.root, &content.document.borrow(), fragment);
+        match found {
+            Some(top) => Some(top),
+            None if fragment.is_empty() || fragment.eq_ignore_ascii_case("top") => Some(0.0),
+            None => None,
+        }
+    }
+
+    fn scroll_to_fragment(&mut self, fragment: &str) -> SceneReaction {
+        let Some(offset) = self.fragment_offset(fragment) else {
+            return SceneReaction::Idle;
+        };
+        let mut url = self.tabs.active().url().clone();
+        url.set_fragment((!fragment.is_empty()).then_some(fragment));
+        let scroll = self.scroll.offset();
+        let tab = self.tabs.active_mut();
+        tab.history_mut().remember_scroll(scroll);
+        tab.history_mut().visit(url.clone());
+        tab.set_url(url);
+        self.address
+            .set_text(&address_text(self.tabs.active().url()));
+        self.pending_scroll = Some(offset * self.factor());
+        self.hovered_link = None;
+        SceneReaction::Redraw
     }
 
     fn press(&mut self, key: KeyInput) -> SceneReaction {
@@ -676,6 +813,7 @@ impl PageScene {
             _ => false,
         };
         if changed {
+            self.hovered_link = None;
             SceneReaction::Redraw
         } else {
             SceneReaction::Idle
@@ -748,6 +886,11 @@ impl RenderScene for PageScene {
         self.viewport_height = (canvas.height() as f32 - CHROME_HEIGHT).max(0.0);
         self.layout_for(canvas.width());
         if let Some(metrics) = self.metrics() {
+            if let Some(fragment) = self.pending_fragment.take()
+                && let Some(offset) = self.fragment_offset(&fragment)
+            {
+                self.pending_scroll = Some(offset * self.factor());
+            }
             if let Some(scroll) = self.pending_scroll.take() {
                 self.scroll.scroll_to(scroll, metrics);
             }
@@ -779,6 +922,9 @@ impl RenderScene for PageScene {
             let summary = memory_summary(process, self.tabs.tabs(), shared_image_bytes());
             draw_memory_bar(canvas, &mut self.text_engine, palette, &summary);
             lift = MEMORY_BAR_HEIGHT;
+        }
+        if let Some(text) = &self.hovered_link {
+            draw_link_status(canvas, &mut self.text_engine, palette, text, lift);
         }
         if let Some(notice) = &self.notice {
             draw_notice(
@@ -815,6 +961,7 @@ impl RenderScene for PageScene {
     fn handle(&mut self, event: InputEvent) -> SceneReaction {
         match event {
             InputEvent::Click { x, y } => self.click(x, y),
+            InputEvent::SecondaryClick { x, y } => self.secondary_click(x, y),
             InputEvent::Press { x, y } => self.press_at(x, y),
             InputEvent::PointerMoved { x, y } => {
                 let hover = hover_chrome(Point::new(x, y), self.tabs.len(), self.viewport_width);
@@ -824,10 +971,17 @@ impl RenderScene for PageScene {
                     hover,
                     ChromeHover::Nothing | ChromeHover::Toolbar(ToolbarTarget::Address)
                 );
-                self.is_over_link = over_chrome_button
-                    || self.target_at(x, y).is_some()
-                    || self.is_over_clickable_control(x, y);
-                if hover_changed {
+                let link = if over_chrome_button {
+                    None
+                } else {
+                    self.target_at(x, y)
+                };
+                let hovered_link = link.as_ref().map(LinkAction::hover_text);
+                let link_changed = hovered_link != self.hovered_link;
+                self.hovered_link = hovered_link;
+                self.is_over_link =
+                    over_chrome_button || link.is_some() || self.is_over_clickable_control(x, y);
+                if hover_changed || link_changed {
                     SceneReaction::Redraw
                 } else {
                     SceneReaction::Idle
@@ -870,7 +1024,13 @@ impl RenderScene for PageScene {
             self.pending_login = None;
         }
         run_due_timers(&mut self.tabs);
-        if refresh_active(&mut self.tabs) || loaded || expired || self.pending.is_some() {
+        let navigated = self.take_script_navigation().is_some();
+        if refresh_active(&mut self.tabs)
+            || loaded
+            || expired
+            || navigated
+            || self.pending.is_some()
+        {
             SceneReaction::Redraw
         } else {
             SceneReaction::Idle

@@ -30,6 +30,7 @@ fr-dpapi = { version = "0.0.1", path = "crates/fr-dpapi" }
 fr-passwords = { version = "0.0.1", path = "crates/fr-passwords" }
 fr-cache = { version = "0.0.1", path = "crates/fr-cache" }
 fr-css = { version = "0.0.1", path = "crates/fr-css" }
+fr-download = { version = "0.0.1", path = "crates/fr-download" }
 fr-dom = { version = "0.0.1", path = "crates/fr-dom" }
 fr-form = { version = "0.0.1", path = "crates/fr-form" }
 fr-icons = { version = "0.0.1", path = "crates/fr-icons" }

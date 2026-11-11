@@ -1,3 +1,4 @@
+pub mod anchor;
 pub mod block;
 pub mod boxes;
 pub mod context;

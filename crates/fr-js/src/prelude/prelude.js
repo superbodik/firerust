@@ -1274,14 +1274,52 @@
   var host = {
     init: function (address) {
       var href = String(address);
-      global.location = {
-        href: href,
+      var parts =
+        /^([a-zA-Z][a-zA-Z0-9+.-]*:)(?:\/\/([^\/?#]*))?([^?#]*)(\?[^#]*)?(#.*)?$/.exec(href) || [];
+      var protocol = parts[1] || '';
+      var authority = parts[2] || '';
+      var at = authority.lastIndexOf('@');
+      var hostPart = at >= 0 ? authority.slice(at + 1) : authority;
+      var colon = hostPart.lastIndexOf(':');
+      var hasPort = colon >= 0 && hostPart.indexOf(']') < colon;
+      var navigate = function (target, inNewTab) {
+        natives.navigate(String(target), !!inNewTab);
+      };
+      var place = {
+        protocol: protocol,
+        host: hostPart,
+        hostname: hasPort ? hostPart.slice(0, colon) : hostPart,
+        port: hasPort ? hostPart.slice(colon + 1) : '',
+        pathname: parts[3] || (authority ? '/' : ''),
+        search: parts[4] || '',
+        hash: parts[5] || '',
+        origin: authority ? protocol + '//' + hostPart : 'null',
         toString: function () {
           return href;
         },
-        reload: function () {},
-        assign: function () {},
-        replace: function () {}
+        reload: function () {
+          navigate(href, false);
+        },
+        assign: function (target) {
+          navigate(target, false);
+        },
+        replace: function (target) {
+          navigate(target, false);
+        }
+      };
+      Object.defineProperty(place, 'href', {
+        enumerable: true,
+        get: function () {
+          return href;
+        },
+        set: function (target) {
+          navigate(target, false);
+        }
+      });
+      global.location = place;
+      global.open = function (target) {
+        navigate(target, true);
+        return null;
       };
     },
     dispatch: function (id, type, init) {

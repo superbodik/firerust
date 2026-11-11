@@ -290,7 +290,19 @@ impl<S: RenderScene> ApplicationHandler for AppHandler<S> {
                 ..
             } => {
                 let (x, y) = self.cursor;
-                self.dispatch(InputEvent::Click { x, y });
+                if self.modifiers.control_key() {
+                    self.dispatch(InputEvent::SecondaryClick { x, y });
+                } else {
+                    self.dispatch(InputEvent::Click { x, y });
+                }
+            }
+            WindowEvent::MouseInput {
+                state: ElementState::Released,
+                button: MouseButton::Middle,
+                ..
+            } => {
+                let (x, y) = self.cursor;
+                self.dispatch(InputEvent::SecondaryClick { x, y });
             }
             _ => {}
         }

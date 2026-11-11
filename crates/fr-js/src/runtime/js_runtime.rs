@@ -8,6 +8,7 @@ use fr_dom::tree::shared_document::SharedDocument;
 
 use crate::clock::now_ms::now_ms;
 use crate::natives::console_write::take_console_lines;
+use crate::natives::navigate_request::{NavigationRequest, take_navigation_request};
 use crate::natives::register_natives::register_natives;
 use crate::runtime::describe_error::describe_error;
 use crate::runtime::js_failure::JsFailure;
@@ -103,6 +104,10 @@ impl JsRuntime {
 
     pub fn take_console(&mut self) -> Vec<String> {
         take_console_lines()
+    }
+
+    pub fn take_navigation(&mut self) -> Option<NavigationRequest> {
+        take_navigation_request()
     }
 
     fn call_host(&mut self, name: &str, arguments: &[JsValue]) -> Result<JsValue, JsFailure> {

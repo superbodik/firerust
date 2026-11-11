@@ -8,6 +8,7 @@ publish.workspace = true
 fr-cache.workspace = true
 fr-css.workspace = true
 fr-dom.workspace = true
+fr-download.workspace = true
 fr-html.workspace = true
 fr-image.workspace = true
 fr-js.workspace = true

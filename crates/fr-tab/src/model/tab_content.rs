@@ -2,6 +2,7 @@ use fr_css::cascade::style_map::StyleMap;
 use fr_dom::node::node_id::NodeId;
 use fr_dom::tree::shared_document::SharedDocument;
 use fr_image::store::image_store::ImageStore;
+use fr_js::natives::navigate_request::NavigationRequest;
 use fr_js::runtime::js_runtime::JsRuntime;
 use fr_page::load::page::Page;
 use fr_page::prefetch::resource_store::ResourceStore;
@@ -78,6 +79,10 @@ impl TabContent {
             eprintln!("script error: {error}");
         }
         flush_console(runtime);
+    }
+
+    pub fn take_navigation(&mut self) -> Option<NavigationRequest> {
+        self.runtime.as_mut()?.take_navigation()
     }
 
     pub fn next_timer_due(&mut self) -> Option<f64> {

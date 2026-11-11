@@ -22,6 +22,7 @@ use crate::natives::dom_set_inner_html::dom_set_inner_html;
 use crate::natives::dom_set_text_content::dom_set_text_content;
 use crate::natives::dom_tag_name::dom_tag_name;
 use crate::natives::dom_text_content::dom_text_content;
+use crate::natives::navigate_request::navigate_request;
 
 pub fn register_natives(context: &mut Context) -> JsResult<()> {
     let mut builder = ObjectInitializer::new(context);
@@ -120,6 +121,11 @@ pub fn register_natives(context: &mut Context) -> JsResult<()> {
         .function(
             NativeFunction::from_fn_ptr(console_write),
             js_string!("log"),
+            2,
+        )
+        .function(
+            NativeFunction::from_fn_ptr(navigate_request),
+            js_string!("navigate"),
             2,
         );
     let natives = builder.build();

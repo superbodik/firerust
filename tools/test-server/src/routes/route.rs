@@ -1,17 +1,23 @@
 use crate::routes::account_page::account_page;
+use crate::routes::attachment_page::attachment_page;
 use crate::routes::brotli_page::brotli_page;
 use crate::routes::cp1251_page::cp1251_page;
 use crate::routes::echo_page::echo_page;
 use crate::routes::gzip_page::gzip_page;
+use crate::routes::json_file::json_file;
+use crate::routes::links_page::links_page;
 use crate::routes::login_page::login_page;
 use crate::routes::login_submit::login_submit;
 use crate::routes::meta_cp1251_page::meta_cp1251_page;
 use crate::routes::not_found::not_found;
 use crate::routes::plain_page::plain_page;
+use crate::routes::png_file::png_file;
 use crate::routes::search_page::search_page;
 use crate::routes::set_cookie_page::set_cookie_page;
 use crate::routes::show_cookie_page::show_cookie_page;
 use crate::routes::slow_page::slow_page;
+use crate::routes::text_file::text_file;
+use crate::routes::zip_file::zip_file;
 use crate::server::http_reply::HttpReply;
 use crate::server::http_request::HttpRequest;
 
@@ -33,6 +39,12 @@ pub fn route(request: &HttpRequest) -> HttpReply {
         ("GET" | "POST", "/echo") => echo_page(request),
         ("GET", "/search") => search_page(request),
         ("GET", "/slow") => slow_page(),
+        ("GET", "/links") => links_page(),
+        ("GET", "/notes.txt") => text_file(),
+        ("GET", "/data.json") => json_file(),
+        ("GET", "/picture.png") => png_file(),
+        ("GET", "/archive.zip") => zip_file(),
+        ("GET", "/report") => attachment_page(),
         _ => not_found(),
     }
 }

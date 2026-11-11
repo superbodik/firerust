@@ -1035,6 +1035,14 @@ name = "fr-dom"
 version = "0.0.1"
 
 [[package]]
+name = "fr-download"
+version = "0.0.1"
+dependencies = [
+ "fr-net",
+ "url",
+]
+
+[[package]]
 name = "fr-dpapi"
 version = "0.0.1"
 
@@ -1131,6 +1139,7 @@ dependencies = [
  "fr-cache",
  "fr-css",
  "fr-dom",
+ "fr-download",
  "fr-geom",
  "fr-html",
  "fr-image",
@@ -1191,6 +1200,7 @@ version = "0.0.1"
 dependencies = [
  "fr-bookmarks",
  "fr-dom",
+ "fr-download",
  "fr-form",
  "fr-geom",
  "fr-icons",

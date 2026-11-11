@@ -5,3 +5,4 @@ pub mod prefetch;
 pub mod script;
 pub mod style;
 pub mod text;
+pub mod view;

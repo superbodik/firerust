@@ -93,6 +93,10 @@ impl Tab {
         self.content = Some(TabContent::from_page(page));
     }
 
+    pub fn set_url(&mut self, url: Url) {
+        self.url = url;
+    }
+
     pub fn restore(&mut self, page: Page) {
         self.title = page.title.clone();
         self.content = Some(TabContent::from_page(page));

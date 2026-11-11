@@ -22,6 +22,7 @@ pub mod dom_tag_name;
 pub mod dom_text_content;
 pub mod host_document;
 pub mod id_value;
+pub mod navigate_request;
 pub mod node_arg;
 pub mod register_natives;
 pub mod string_arg;
