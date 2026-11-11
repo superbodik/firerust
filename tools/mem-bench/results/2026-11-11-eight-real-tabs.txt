@@ -1,0 +1,31 @@
+﻿firerust memory comparison
+date: 2026-11-11 22:55
+firerust commit: 2e18330
+firefox: 159.0.1
+chrome: 147.0.7727.56
+edge: 157.0.4341.46
+metric: sum of private working set of every process of the browser, MB
+each browser is started with a fresh profile and measured after the settle time
+
+tabs: https://example.com https://news.ycombinator.com https://en.wikipedia.org/wiki/Rust_(programming_language) https://lobste.rs https://www.rust-lang.org https://doc.rust-lang.org/book/ https://text.npr.org https://developer.mozilla.org/en-US/
+settle: 40 s (+8 s for the other browsers)
+
+Case        Browser  Procs PrivateMB
+----        -------  ----- ---------
+8 real tabs firerust     2      23,5
+8 real tabs firefox     19       608
+8 real tabs chrome      14     264,9
+8 real tabs edge        15     296,5
+
+
+
+
+Browser  InstallMB
+-------  ---------
+firerust        19
+firefox        359
+chrome         458
+edge          1792
+
+
+
