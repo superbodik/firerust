@@ -12,6 +12,7 @@ use crate::value::font_style::FontStyle;
 use crate::value::justify_content::JustifyContent;
 use crate::value::length::Length;
 use crate::value::line_height::LineHeight;
+use crate::value::position::Position;
 use crate::value::side::Side;
 use crate::value::text_align::TextAlign;
 use crate::value::text_decoration::TextDecoration;
@@ -42,6 +43,7 @@ pub enum Declaration {
     AccentColor(Rgba),
     Float(FloatSide),
     Clear(ClearSide),
+    Position(Position),
     BorderRadius(Corner, Length),
     Custom(Box<str>, Box<str>),
     Deferred(Box<str>, Box<str>),

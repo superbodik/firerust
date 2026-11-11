@@ -224,3 +224,33 @@ fn text_beside_a_float_wraps_in_the_narrower_column() {
 
     assert!(narrow.boxed("p").border_box.size.height > plain.boxed("p").border_box.size.height);
 }
+
+#[test]
+fn text_is_never_squeezed_into_a_sliver_beside_a_wide_float() {
+    let page = layout(
+        &format!(
+            "<div id=box style='width: 300px'><div style='float: left; width: 280px; height: 60px'></div><p id=p>{TEXT}</p></div>"
+        ),
+        "",
+        800.0,
+    );
+
+    let paragraph = page.boxed("p").border_box;
+
+    assert!(paragraph.size.width >= 100.0 || paragraph.origin.y >= 60.0);
+}
+
+#[test]
+fn a_narrow_column_clears_the_float_instead_of_collapsing() {
+    let page = layout(
+        "<div style='width: 120px'><div id=f style='float: right; width: 100px; height: 80px'></div>\
+         <div id=b style='height: 10px'></div></div>",
+        "",
+        800.0,
+    );
+
+    let float = page.boxed("f").border_box;
+    let below = page.boxed("b").border_box;
+
+    assert!(below.origin.y >= float.bottom() - 0.5);
+}

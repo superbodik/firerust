@@ -11,6 +11,7 @@ use crate::value::font_family::FontFamily;
 use crate::value::font_style::FontStyle;
 use crate::value::length::{Length, ROOT_FONT_SIZE};
 use crate::value::line_height::LineHeight;
+use crate::value::position::Position;
 use crate::value::size_style::SizeStyle;
 use crate::value::text_align::TextAlign;
 use crate::value::text_decoration::TextDecoration;
@@ -38,6 +39,7 @@ pub struct ComputedStyle {
     pub accent_color: Option<Rgba>,
     pub float_side: FloatSide,
     pub clear_side: ClearSide,
+    pub position: Position,
     pub border_radius: Corners<Length>,
     pub flex: FlexStyle,
 }
@@ -65,6 +67,7 @@ impl ComputedStyle {
             accent_color: None,
             float_side: FloatSide::None,
             clear_side: ClearSide::None,
+            position: Position::Static,
             border_radius: Corners::uniform(Length::Px(0.0)),
             flex: FlexStyle::default(),
         }

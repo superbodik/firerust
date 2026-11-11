@@ -3,6 +3,7 @@ pub mod compute_style;
 pub mod compute_styles;
 pub mod computed_style;
 pub mod custom_properties;
+pub mod is_visually_hidden;
 pub mod origin;
 pub mod presentational_hints;
 pub mod rule_index;

@@ -14,6 +14,7 @@ use crate::value::font_style::FontStyle;
 use crate::value::justify_content::JustifyContent;
 use crate::value::length::Length;
 use crate::value::line_height::LineHeight;
+use crate::value::position::Position;
 use crate::value::text_align::TextAlign;
 use crate::value::text_decoration::TextDecoration;
 use crate::value::white_space::WhiteSpace;
@@ -43,6 +44,7 @@ pub struct SpecifiedStyle {
     pub accent_color: Option<Rgba>,
     pub float_side: Option<FloatSide>,
     pub clear_side: Option<ClearSide>,
+    pub position: Option<Position>,
     pub border_radius: Corners<Option<Length>>,
     pub flex_direction: Option<FlexDirection>,
     pub flex_wrap: Option<bool>,
@@ -81,6 +83,7 @@ impl SpecifiedStyle {
             Declaration::AccentColor(value) => self.accent_color = Some(*value),
             Declaration::Float(value) => self.float_side = Some(*value),
             Declaration::Clear(value) => self.clear_side = Some(*value),
+            Declaration::Position(value) => self.position = Some(*value),
             Declaration::Custom(..) | Declaration::Deferred(..) => {}
             Declaration::BorderRadius(corner, value) => {
                 self.border_radius.set(*corner, Some(*value))

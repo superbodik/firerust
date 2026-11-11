@@ -21,6 +21,7 @@ use crate::parse::parse_gap::parse_gap;
 use crate::parse::parse_justify_content::parse_justify_content;
 use crate::parse::parse_length::parse_length;
 use crate::parse::parse_line_height::parse_line_height;
+use crate::parse::parse_position::parse_position;
 use crate::parse::parse_text_align::parse_text_align;
 use crate::parse::parse_text_decoration::parse_text_decoration;
 use crate::parse::parse_white_space::parse_white_space;
@@ -58,6 +59,7 @@ pub fn parse_property(name: &str, parser: &mut Parser<'_>) -> Option<Vec<Declara
         "accent-color" => single(parse_color(parser), Declaration::AccentColor),
         "float" => single(parse_float(parser), Declaration::Float),
         "clear" => single(parse_clear(parser), Declaration::Clear),
+        "position" => single(parse_position(parser), Declaration::Position),
         "border" => parse_border(parser, &Side::ALL),
         "border-radius" => parse_border_radius(parser),
         "border-top-left-radius" => parse_corner_radius(parser, Corner::TopLeft),

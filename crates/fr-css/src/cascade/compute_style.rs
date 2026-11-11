@@ -1,4 +1,5 @@
 use crate::cascade::computed_style::ComputedStyle;
+use crate::cascade::is_visually_hidden::is_visually_hidden;
 use crate::cascade::specified_style::SpecifiedStyle;
 use crate::value::display::Display;
 use crate::value::flex_style::FlexStyle;
@@ -15,8 +16,21 @@ pub fn compute_style(specified: &SpecifiedStyle, parent: &ComputedStyle) -> Comp
     };
     let gap = |value: Option<Length>| relative(value, Length::Px(0.0)).px_or_zero();
 
+    let size = SizeStyle {
+        width: relative(specified.width, Length::Auto),
+        height: relative(specified.height, Length::Auto),
+        min_width: relative(specified.min_width, Length::Auto),
+        max_width: relative(specified.max_width, Length::Auto),
+    };
+    let position = specified.position.unwrap_or_default();
+    let is_hidden = is_visually_hidden(position, &size);
+
     ComputedStyle {
-        display: specified.display.unwrap_or(Display::Inline),
+        display: if is_hidden {
+            Display::None
+        } else {
+            specified.display.unwrap_or(Display::Inline)
+        },
         color,
         background_color: specified
             .background_color
@@ -30,12 +44,7 @@ pub fn compute_style(specified: &SpecifiedStyle, parent: &ComputedStyle) -> Comp
         text_decoration: specified.text_decoration.unwrap_or(parent.text_decoration),
         white_space: specified.white_space.unwrap_or(parent.white_space),
         box_sizing: specified.box_sizing.unwrap_or_default(),
-        size: SizeStyle {
-            width: relative(specified.width, Length::Auto),
-            height: relative(specified.height, Length::Auto),
-            min_width: relative(specified.min_width, Length::Auto),
-            max_width: relative(specified.max_width, Length::Auto),
-        },
+        size,
         margin: specified
             .margin
             .map(|value| relative(value, Length::Px(0.0))),
@@ -49,6 +58,7 @@ pub fn compute_style(specified: &SpecifiedStyle, parent: &ComputedStyle) -> Comp
         accent_color: specified.accent_color.or(parent.accent_color),
         float_side: specified.float_side.unwrap_or_default(),
         clear_side: specified.clear_side.unwrap_or_default(),
+        position,
         border_radius: specified
             .border_radius
             .map(|value| relative(value, Length::Px(0.0))),
